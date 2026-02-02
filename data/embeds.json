@@ -1,0 +1,63 @@
+{
+	"Boas vindas": {
+		"title": "Seja muito bem-vindo ao Sacra Communitas!",
+		"description": "Olá, fiel!\n\nEsta comunidade foi criada para acolher e guiar os seguidores do Catolicismo, proporcionando um espaço seguro e temático baseado na fé e nos ensinamentos da Santa Igreja Católica.\n\n**Canais importantes para começar:**\n- <#1429160711912685588> **Regras do servidor** - Leia com atenção para entender o que é permitido e proibido.\n- <#1429517914494603274> **Liturgia diária** - Atualizada todos os dias às 6:00 (horário de Brasília) para acompanhar a vida litúrgica.\n- <#1430629620499222759> **Código Canônico** - Código contendo as principais informações sobre o funcionamento prático do servidor.\n\nSinta-se à vontade para explorar, interagir com a comunidade e crescer na fé!",
+		"color": 16763904,
+		"thumbnail": {
+			"url": "https://images-ext-1.discordapp.net/external/oTsQg9QtLOXYH8ECGGkvMx685dCiMu1pEVvOCunF_wk/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1429152785252876328/b614333038604a5e7d409db604568a31.png?format=webp&quality=lossless&width=930&height=930"
+		},
+		"footer": {
+			"text": "Sacra Communitas - Comunidade Católica Online",
+			"icon_url": "https://images-ext-1.discordapp.net/external/oTsQg9QtLOXYH8ECGGkvMx685dCiMu1pEVvOCunF_wk/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1429152785252876328/b614333038604a5e7d409db604568a31.png?format=webp&quality=lossless&width=930&height=930"
+		}
+	},
+	"Convite": {
+		"flags": 32768,
+		"components": [
+			{
+				"type": 17,
+				"components": [
+					{
+						"type": 10,
+						"content": "# 🇻🇦 Seja bem-vindo à Sacra Communitas!\n\n> Imagine um lugar onde a fé é vivida com reverência, serenidade e caridade.\n> Um espaço criado para ser **refúgio aos católicos**, mas também **acolhedor a todos que desejam conhecer, dialogar e caminhar com respeito**.\n> Aqui, encontramos para dialogar em comunhão com todos."
+					},
+					{"type": 14, "spacing": 2},
+					{
+						"type": 10,
+						"content": "## O que você encontrará na Sacra Communitas:\n\n- **📖 Ensino da Doutrina Católica**  \n  Espaços dedicados ao estudo dos dogmas, da tradição, da moral e da história da Igreja, sempre com fidelidade ao Magistério.\n\n- **🕯️ Liturgia Diária**  \n  Leitura diária da liturgia, atualizada todos os dias, para acompanhar o ritmo da Igreja e santificar o cotidiano.\n\n- **📜 Leitura da Sagrada Escritura**  \n  Ambientes para leitura, reflexão e partilha da Palavra de Deus, com respeito e profundidade.\n\n- **🙏 Espaços de Oração**  \n  Canais reservados para intenções, orações comunitárias e momentos de recolhimento espiritual.\n\n- **💬 Convivência e Acolhimento**  \n  Um ambiente moderado, respeitoso e fraterno, onde católicos e visitantes podem conversar sem hostilidade, ironia ou ataques à fé.\n\n> *Aqui, buscamos ordem antes do ruído, caridade antes do conflito e verdade antes do orgulho.*\n> *Se você procura um espaço sério, sereno e bem cuidado, este lugar pode ser seu lar.* "
+					},
+					{"type": 14, "spacing": 2},
+					{
+						"type": 10,
+						"content": "🔔 **Entre e sinta-se à vontade para permanecer.**  \nO Sacra Communitas está de portas abertas."
+					},
+					{
+						"type": 12,
+						"items": [
+							{
+								"media": {
+									"url": "https://cdn.discordapp.com/icons/1429152785252876328/b614333038604a5e7d409db604568a31.png?size=2048"
+								}
+							}
+						]
+					},
+					{
+						"type": 1,
+						"components": [
+							{
+								"type": 2,
+								"style": 5,
+								"url": "https://discord.gg/NJMTbNukrk",
+								"emoji": {"name": "🙏"},
+								"label": "Entrar no servidor"
+							}
+						]
+					}
+				],
+				"accent_color": 16763904
+			}
+		],
+		"username": "Sacra Communitas",
+		"avatar_url": "https://cdn.discordapp.com/icons/1429152785252876328/b614333038604a5e7d409db604568a31.png?size=2048"
+	}
+}

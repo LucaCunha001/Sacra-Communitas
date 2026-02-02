@@ -1,0 +1,103 @@
+{
+	"Regras": [
+		"Terá fé em Deus Pai, Filho e Espírito Santo, na Igreja Católica, na comunhão dos santos, na remissão dos pecados, na ressurreição e na vida eterna.",
+		"Respeitará e seguirá os ensinamentos da Igreja Católica e os mandamentos de Deus.",
+		"Reconhecerá a própria imperfeição, admitindo erros, perdoando os outros e buscando reconciliação.",
+		"Praticará caridade, respeito e apoio mútuo, auxiliando espiritualmente e emocionalmente quem precisar.",
+		"Compartilhará apenas informações verdadeiras, completas e verificadas, evitando rumores ou notícias enganosas.",
+		"Manterá a confidencialidade de informações pessoais e sensíveis compartilhadas na comunidade.",
+		"Respeitará as autoridades do servidor e seguirá regras e diretrizes para um bom convívio.",
+		"Zelará pela boa reputação da comunidade, evitando atitudes que possam prejudicá-la.",
+		"Não profanará os pilares da Igreja nem seus frutos.",
+		"Não divulgará links, eventos ou materiais externos sem autorização da administração, garantindo a ordem e segurança da comunidade."
+	],
+	"Cânones": [
+		{
+			"titulo": "Disposições Gerais",
+			"conteudo": "Este Cânone estabelece os princípios fundamentais que orientam o Código Canônico desta comunidade, assegurando a justiça, a ordem e a unidade entre os fiéis.",
+			"artigos": [
+				{
+					"texto": "O Código tem como finalidade promover a transparência administrativa e a harmonia fraterna, definindo as penalidades aplicáveis a cada infração, conforme os seguintes princípios:",
+					"incisos": [
+						"As punições poderão ser revistas conforme a gravidade e o contexto, mediante discernimento dos sacerdotes da comunidade",
+						"As penas possuem caráter educativo e restaurador, buscando a correção e a conversão do faltoso",
+						"A preservação da ordem prevalece sobre a reconciliação quando esta comprometer a integridade doutrinal ou disciplinar da comunidade"
+					]
+				},
+				{
+					"texto": "Nenhuma pena será imposta sem fundamento justo e coerente, em conformidade com os princípios da Igreja Católica, a legislação civil vigente e as diretrizes desta comunidade."
+				},
+				{
+					"texto": "As punições aplicáveis, em ordem crescente de gravidade, são:",
+					"incisos": [
+						"Penitência: consiste em um período determinado de silêncio ou restrição no servidor",
+						"Admoestação: acompanhada de penitência, com registro do ocorrido em anotações acumulativas, que poderão justificar sanções mais severas",
+						"Suspensão: remoção temporária do membro, com o objetivo de proteger a comunidade de incidentes recorrentes ou graves",
+						"Excomunhão: exclusão definitiva do membro, rompendo sua comunhão com a comunidade"
+					],
+					"paragrafos": [
+						"Toda punição poderá ser revista ou revogada pelo Clero, caso se reconheça arrependimento sincero ou erro na aplicação da justiça."
+					]
+				}
+			],
+			"canal": 1430519594233102418
+		},
+		{
+			"titulo": "Punições",
+			"conteudo": "Das punições impostas segundo a justiça e o discernimento pastoral.",
+			"artigos": [
+				{
+					"texto": "São consideradas infrações graves, cujas penalidades não poderão ser revogadas, exceto em caso de comprovada má interpretação do responsável pela punição:",
+					"incisos": [
+						"Blasfêmia contra o Pai, o Filho ou o Espírito Santo",
+						"Sedevacantismo, ou seja, a negação da legitimidade do Papa reinante",
+						"Proselitismo herético, com a intenção de conduzir outros à heresia ou a seitas contrárias à fé católica",
+						"Falsa acusação contra membros da comunidade ou do clero"
+					],
+					"paragrafos": [
+						"As infrações aqui descritas são punidas com excomunhão do membro envolvido.",
+						"Erros cometidos sem intenção deliberada poderão ser perdoados, caso se comprove a inocência do autor, conforme o discernimento dos sacerdotes responsáveis pelo julgamento."
+					]
+				},
+				{
+					"texto": "São infrações de menor gravidade, cujas penalidades podem ser revogadas mediante arrependimento e avaliação do contexto da situação:",
+					"incisos": [
+						"Discussões acaloradas ou brigas motivadas pela ira",
+						"Ofensa direta ou indireta a um membro do clero",
+						"Desobediência a uma orientação, sem motivo justo ou relevante",
+						"Apoio deliberado de movimentos ou ideias que contradizem o princípio da verdade e da fé"
+					],
+					"paragrafos": [
+						"Essas infrações são punidas com penitência ou admoestação, conforme o discernimento do clérigo responsável"
+					]
+				}
+			],
+			"canal": 1430537428111720530
+		},
+		{
+			"titulo": "Ordem Sacerdotal",
+			"conteudo": "A comunidade é conduzida por sacerdotes em um sistema hierárquico, sendo estes escolhidos entre os noviços que se voluntariam e demonstram vocação e fidelidade à doutrina.",
+			"artigos": [
+				{
+					"texto": "Os cargos sacerdotais, em ordem hierárquica, são os seguintes:",
+					"incisos": [
+						"Papa",
+						"Cardeal",
+						"Arcebispo",
+						"Bispo",
+						"Padre",
+						"Diácono",
+						"Seminarista"
+					]
+				},
+				{
+					"texto": "A candidatura de um membro tem início quando ele se apresenta como noviço. Sua solicitação será então avaliada por sacerdotes com cargo igual ou superior a Bispo, que decidirão pela aprovação ou rejeição do pedido.",
+					"paragrafos": [
+						"As solicitações deverão ser enviadas por meio do formulário acessível pelo comando </sacerdocio enviar_solicitacao:1431663923890753708> ou no canal <#1441791343558135828>."
+					]
+				}
+			],
+			"canal": 1430612091856748595
+		}
+	]
+}
