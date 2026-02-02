@@ -2,8 +2,6 @@ import discord
 import os
 import traceback
 
-from dotenv import load_dotenv
-
 from discord import app_commands, ui
 
 from utils.console import (
@@ -16,8 +14,6 @@ from utils.recursos import (
 	get_config
 )
 from utils.permissoes import FaltaPermissaoSacerdotal
-
-load_dotenv()
 
 config = get_config()
 bot = Bot()
@@ -191,5 +187,8 @@ if __name__ == "__main__":
 	reinstall_requirements()
 	command("clear")
 
+	from dotenv import load_dotenv
+
+	load_dotenv()
 	TOKEN = os.getenv('TOKEN')
 	bot.run(TOKEN)
