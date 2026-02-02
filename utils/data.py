@@ -75,7 +75,6 @@ class ConfigDict(TypedDict):
 	servidores: ServidoresDict
 
 class Config(TypedDict):
-	TOKEN: str
 	canais: dict[str, int]
 	config: ConfigDict
 	cargos: CargosDict[str, CargosDict]

@@ -3,3 +3,4 @@ chat-exporter
 discord.py
 requests
 better-profanity
+python-dotenv
