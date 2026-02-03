@@ -16,9 +16,10 @@ from typing import Callable
 from utils.data import DataFiles, CanonesDict, get_config, save_config
 from utils.recursos import Bot, contar, expand_bible_verse
 from utils.permissoes import permissao
-from utils.embed import criar_embed
 
 from zoneinfo import ZoneInfo
+
+from .tickets import create_ticket_channel
 
 logger = logging.getLogger("liturgia")
 logger.setLevel(logging.DEBUG)
@@ -220,14 +221,71 @@ async def enviar_solicitacao(bot: Bot, interaction: discord.Interaction):
 	modal = SolicitacaoSacerdocioModal(bot=bot)
 	await interaction.response.send_modal(modal)
 
-class SacerdocioNovicoView(ui.View):
+class InscricoesView(ui.LayoutView):
 	def __init__(self, bot: Bot):
 		super().__init__(timeout=None)
 		self.bot = bot
+
+		c_novico = ui.Container(
+			ui.Section(
+				ui.TextDisplay("## Torne-se um sacerdote da Sacra Communitas!"),
+				accessory=ui.Thumbnail("https://cdn-icons-png.flaticon.com/512/443/443603.png")
+			),
+			accent_color=0x98FFC3
+		)
+		c_novico.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
+		c_novico.add_item(ui.TextDisplay(
+			"Gostaria de servir nossa comunidade em um papel mais profundo e significativo? "
+			"Estamos aceitando solicitações para novos sacerdotes que desejam se juntar ao nosso clero dedicado.\n\n"
+			"Como sacerdote, você terá a oportunidade de ajudar a cuidar do servidor e de seus membros, "
+			"promovendo um ambiente mais acolhedor e seguro para todos da comunidade.\n\n"
+			"Ao fazer a sua solicitação, você se compromete a manter uma conduta exemplar, "
+			"respeitando as diretrizes e valores da comunidade.\n\n"
+			"Ao enviar sua solicitação, ganhará automaticamente o cargo de Noviço, iniciando sua jornada rumo ao sacerdócio.Depois, basta aguardar a análise dos bispos do servidor.\n\n"
+			"Clique no botão abaixo para enviar sua solicitação e dar o primeiro passo em direção a essa nobre vocação!"
+		))
+
+		novico_btn = ui.Button(label="Enviar Solicitação", style=discord.ButtonStyle.primary, custom_id="enviar_solicitacao_sacerdocio", emoji="🕊️")
+		novico_btn.callback = self.solicitacao_novico
+
+		c_novico.add_item(ui.ActionRow(novico_btn))
+
+		c_doutrina = ui.Container(
+			ui.Section(
+				ui.TextDisplay("## Participe da equipe doutrinária!"),
+				accessory=ui.Thumbnail("https://cdn-icons-png.flaticon.com/512/2682/2682065.png")
+			),
+			accent_color=0xB7950B
+		)
+		c_doutrina.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
+		
+		c_doutrina.add_item(ui.TextDisplay(
+			"Você gosta de estudar a fé católica com profundidade e fidelidade à doutrina da Igreja? "
+			"Estamos recebendo solicitações para o cargo de Doutrina, voltado a membros que desejam ajudar na orientação teológica do servidor.\n\n"
+			"Quem ocupa essa função auxilia na explicação de temas doutrinários, esclarecimento de dúvidas e manutenção da fidelidade dos conteúdos compartilhados, "
+			"sempre em comunhão com o Magistério da Igreja.\n\n"
+			"Ao se candidatar, você assume o compromisso de buscar formação contínua, agir com caridade nas correções e evitar debates desnecessariamente acalorados, "
+			"preservando a unidade e o bom clima da comunidade.\n\n"
+			"O cargo não é apenas um título, mas um serviço: exige responsabilidade, prudência e humildade intelectual.\n\n"
+			"Clique no botão abaixo para enviar sua solicitação e passar pela avaliação da equipe responsável pela área doutrinária."
+		))
+
+
+		doutrina_btn = ui.Button(label="Enviar Solicitação", style=discord.ButtonStyle.primary, custom_id="enviar_solicitacao_doutrina", emoji="📖")
+		doutrina_btn.callback = self.solicitacao_doutrina
+
+		c_doutrina.add_item(ui.ActionRow(doutrina_btn))
+
+		self.add_item(c_novico)
+		self.add_item(c_doutrina)
 	
-	@ui.button(label="Enviar Solicitação", style=discord.ButtonStyle.primary, custom_id="enviar_solicitacao_sacerdocio", emoji="✉️")
-	async def enviar_solicitacao_button(self, interaction: discord.Interaction, button: ui.Button):
+	async def solicitacao_novico(self, interaction: discord.Interaction):
 		await enviar_solicitacao(self.bot, interaction)
+	
+	async def solicitacao_doutrina(self, interaction: discord.Interaction):
+		if not any(r == role.id for role in interaction.user.roles for r in [1429972827209207878, 1429973276041412658]):
+			return await interaction.response.send_message("Precisa ser católico para se inscrever!", ephemeral=True)
+		await create_ticket_channel(self.bot, interaction, f"📜・{interaction.user.name}")
 
 class SacerdocioCog(commands.Cog):
 	def __init__(self, bot: Bot):
@@ -278,7 +336,7 @@ class SacerdocioCog(commands.Cog):
 
 		await interaction.response.send_message(embed=embed)
 
-	@sacerdocio_group.command(name="solicitacao_msg", description="Envia a mensagem de solicitação de sacerdócio no canal designado.")
+	@sacerdocio_group.command(name="solicitacoes_msg", description="Envia as mensagens de solicitações no canal designado.")
 	@permissao(gerenciar_comunidade=True)
 	async def solicitacao_msg(self, interaction: discord.Interaction):
 		canal_id = self.bot.config['canais'].get('solicitacoes_sacerdocio_pub')
@@ -289,25 +347,7 @@ class SacerdocioCog(commands.Cog):
 		
 		await canal.purge(limit=None)
 
-		embed = criar_embed(
-			titulo="Torne-se um sacerdote do Sacra Communitas",
-			descricao=(
-				"Gostaria de servir nossa comunidade em um papel mais profundo e significativo? "
-				"Estamos aceitando solicitações para novos sacerdotes que desejam se juntar ao nosso clero dedicado.\n\n"
-				"Como sacerdote, você terá a oportunidade de ajudar a cuidar do servidor e de seus membros, "
-				"promovendo um ambiente mais acolhedor e seguro para todos da comunidade.\n\n"
-				"Ao fazer a sua solicitação, você se compromete a manter uma conduta exemplar, "
-				"respeitando as diretrizes e valores da comunidade.\n\n"
-				"Ao enviar sua solicitação, ganhará automaticamente o cargo de Noviço, iniciando sua jornada rumo ao sacerdócio.Depois, basta aguardar a análise do Papa, Cardeais e Bispos.\n\n"
-				"Clique no botão abaixo para enviar sua solicitação e dar o primeiro passo em direção a essa nobre vocação!"
-			),
-			cor=0xffcc00,
-			footer="Noviços",
-			servidor=interaction.guild,
-			author=interaction.guild.owner
-		)
-
-		await canal.send(embed=embed, view=SacerdocioNovicoView(bot=self.bot))
+		await canal.send(view=InscricoesView(bot=self.bot))
 		await interaction.response.send_message("Mensagem de solicitação enviada com sucesso!", ephemeral=True)
 
 	@sacerdocio_group.command(name="enviar_solicitacao", description="Enviar uma solicitação para se tornar um sacerdote.")
@@ -920,20 +960,44 @@ class LiturgiaCog(commands.Cog):
 
 	async def generate_liturgy_view(self, url: str, content: str) -> ui.LayoutView:
 		liturgia = await self.get_liturgy(url)
-		containers = []
+		containers: list[ui.Container] = []
+
+		MAX_CHARS = 3500
+
+		def split_text(text: str, limit: int = MAX_CHARS) -> list[str]:
+			partes = []
+			while text:
+				if len(text) <= limit:
+					partes.append(text)
+					break
+
+				corte = text.rfind("\n", 0, limit)
+				if corte == -1:
+					corte = limit
+
+				partes.append(text[:corte])
+				text = text[corte:].lstrip("\n")
+
+			return partes
+
 
 		def get_container_color(cor: str):
 			cores = {"Verde": 0x00FF00, "Branco": 0xFFFFFF, "Vermelho": 0xFF0000, "Azul": 0x0000FF}
 			return cores.get(cor, 0xFFCC00)
 
 		def create_container(title: str, description: str = ""):
-			return ui.Container(
+			items = [
 				ui.TextDisplay(f"## {title}"),
 				ui.Separator(spacing=discord.SeparatorSpacing.large),
-				ui.TextDisplay(f"\n{description}"),
-				accent_color = get_container_color(liturgia["cor"])
-			)
+			]
 
+			for parte in split_text(description):
+				items.append(ui.TextDisplay(parte))
+
+			return ui.Container(
+				*items,
+				accent_color=get_container_color(liturgia["cor"])
+			)
 		for key in ["primeiraLeitura", "salmo", "segundaLeitura", "evangelho", "extras"]:
 			leitura = liturgia.get(key)
 			if isinstance(leitura, list) and leitura:
@@ -959,8 +1023,10 @@ class LiturgiaCog(commands.Cog):
 		view = ui.LayoutView()
 
 		for i, c in enumerate(containers, start=1):
-			if i == len(containers):
-				c.add_item(ui.TextDisplay(content))
+			if i == len(containers) and content:
+				for parte in split_text(content):
+					c.add_item(ui.TextDisplay(parte))
+
 			view.add_item(c)
 		return view
 
@@ -1149,5 +1215,5 @@ async def setup(bot: Bot):
 	await bot.add_cog(SacerdocioCog(bot))
 	await bot.add_cog(LiturgiaCog(bot))
 	await bot.add_cog(CanonesCog(bot))
-	bot.add_view(SacerdocioNovicoView(bot=bot))
+	bot.add_view(InscricoesView(bot=bot))
 	bot.add_view(SolicitacaoSacerdocioView(bot=bot))

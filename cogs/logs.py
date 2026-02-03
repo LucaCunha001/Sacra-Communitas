@@ -113,13 +113,13 @@ class LogsCog(commands.Cog):
 	@commands.Cog.listener()
 	async def on_message(self, msg: discord.Message):		
 		await self.publish_if_news(msg=msg)
+		await self.check_boost_message(msg=msg)
 		
 		if msg.author.bot:
 			return
 		
 		await check_cic_verse(msg=msg)
 		await self.check_bible_verse(msg=msg)
-		await self.check_boost_message(msg=msg)
 		await self.check_badword(msg=msg)
 	
 	async def publish_if_news(self, msg: discord.Message):
@@ -198,11 +198,18 @@ class LogsCog(commands.Cog):
 			
 
 	async def check_boost_message(self, msg: discord.Message):
-		if msg.type == discord.MessageType.premium_guild_subscription:
-			await msg.author.add_roles(
-				msg.guild.get_role(self.bot.config["cargos"]["config"]["ja_fui_booster"])
-			)
-			await self.enviar_mensagem_boost(msg.author)
+		match msg.type:
+			case discord.MessageType.premium_guild_subscription:
+				await self.enviar_mensagem_boost(msg.author)
+				await msg.author.add_roles(
+					msg.guild.get_role(self.bot.config["cargos"]["config"]["ja_fui_booster"])
+				)
+			case discord.MessageType.premium_guild_tier_1:
+				await self.enviar_novo_nivel(msg.guild, msg.author)
+			case discord.MessageType.premium_guild_tier_2:
+				await self.enviar_novo_nivel(msg.guild, msg.author)
+			case discord.MessageType.premium_guild_tier_3:
+				await self.enviar_novo_nivel(msg.guild, msg.author)
 
 	async def check_bible_verse(self, msg: discord.Message):
 		resultados = expand_bible_verse(msg.content)
@@ -423,18 +430,73 @@ class LogsCog(commands.Cog):
 		)
 
 	async def enviar_mensagem_boost(self, usuario: discord.Member):
-		geral = usuario.guild.get_channel(self.bot.config["canais"]["geral"])
-		embed = discord.Embed(
-			title="🎉 Novo Booster!",
-			description=f"✨ {usuario.mention} acabou de impulsionar o servidor!\n"
-			"Obrigado por ajudar a tornar nossa comunidade ainda mais incrível!\n\n"
-			"Cada boost é um passo para algo incrível! Obrigado por apoiar nosso servidor!",
-			colour=0xffff00,
-			timestamp=datetime.datetime.now(),
+		canal = usuario.guild.get_channel(self.bot.config["canais"]["geral"])
+
+		view = ui.LayoutView()
+		container = ui.Container(
+			ui.Section(
+				ui.TextDisplay("🎉 **Novo Booster!**"),
+				accessory=ui.Thumbnail(usuario.display_avatar.url)
+			),
+			accent_color=usuario.guild.premium_subscriber_role.color
 		)
-		embed.set_thumbnail(url=usuario.display_avatar.url)
-		embed.set_image(url="https://media.discordapp.net/attachments/955972869505024020/1325490299874836510/booster.gif?ex=68b9b409&is=68b86289&hm=8f94c19682d608f9a39d3e05244917cbff1f4fb19c97b5aa013bf845fe58b2fc&=&width=480&height=281")
-		await geral.send(embed=embed)
+
+		container.add_item(
+			ui.TextDisplay(
+				f"✨ {usuario.mention} acabou de impulsionar o servidor!\n"
+				"Obrigado por ajudar a tornar nossa comunidade ainda mais incrível!\n\n"
+				"Cada boost é um passo a mais para o crescimento da comunidade. Sua ajuda faz diferença!"
+			)
+		)
+
+		container.add_item(
+			ui.MediaGallery(
+				discord.MediaGalleryItem("https://media.discordapp.net/attachments/955972869505024020/1325490299874836510/booster.gif")
+			)
+		)
+
+		agora = int(datetime.datetime.now().timestamp())
+		container.add_item(
+			ui.TextDisplay(f"<t:{agora}:F>")
+		)
+		view.add_item(container)
+
+		await canal.send(view=view)
+
+	async def enviar_novo_nivel(self, guild: discord.Guild, ultimo_usuario: discord.Member):
+		await self.enviar_mensagem_boost(ultimo_usuario)
+		canal = guild.get_channel(self.bot.config["canais"]["geral"])
+
+		nivel = guild.premium_tier
+		boosts = guild.premium_subscription_count
+
+		view = ui.LayoutView()
+
+		icone_nivel = {1: "⭐", 2: "🌟", 3: "👑"}.get(nivel, "🚀")
+
+		container = ui.Container(
+			ui.Section(
+				ui.TextDisplay(f"{icone_nivel} **Subimos para o Nível {nivel}!**"),
+				accessory=ui.Thumbnail(guild.icon.url) if guild.icon else None
+			),
+			accent_color=0xFFCC00
+		)
+
+		container.add_item(
+			ui.TextDisplay(
+				f"Graças aos impulsos da comunidade, alcançamos **Nível {nivel}** de boost!\n\n"
+				f"💜 Último boost: {ultimo_usuario.mention}\n"
+				f"🔥 Total de boosts ativos: **{boosts}**\n\n"
+				"Isso libera ainda mais benefícios para o servidor. Obrigado a todos que estão apoiando!"
+			)
+		)
+
+		agora = int(datetime.datetime.now().timestamp())
+		container.add_item(ui.TextDisplay(f"<t:{agora}:F>"))
+
+		view.add_item(container)
+
+		await canal.send(view=view)
 
 	@commands.Cog.listener()
 	async def on_member_update(self, before: discord.Member, after: discord.Member):
@@ -443,3 +505,12 @@ class LogsCog(commands.Cog):
 
 async def setup(bot: Bot):
 	await bot.add_cog(LogsCog(bot))
+
+	@bot.tree.context_menu(name="Recarregar Boost")
+	async def recarregar_boost(interaction: discord.Interaction, msg: discord.Message):
+		cog: LogsCog = interaction.client.get_cog("LogsCog")
+		if cog:
+			await cog.check_boost_message(msg)
+			await interaction.response.send_message("Boost recarregado.", ephemeral=True)
+		else:
+			await interaction.response.send_message("Cog não encontrado.", ephemeral=True)

@@ -115,8 +115,7 @@ class TicketSelectMenu(discord.ui.Select):
 
 		config = get_config()
 
-		print(self.values[0])
-		if self.values[0] == str(1):
+		if self.values[0] == str(2):
 			if config["canais"].get("intencoes") is None:
 				return interaction.response.send_message("Ainda não foi configurado o sistema de intenções. Aguarde um pouco.", ephemeral=True)
 
@@ -124,61 +123,78 @@ class TicketSelectMenu(discord.ui.Select):
 
 		channel_name = f"{self.opcoes[int(self.values[0])][0]}・{interaction.user.name}"
 
-		ticket_category = interaction.guild.get_channel(
-			config["canais"]["categoria_tickets"]
+		await create_ticket_channel(self.bot, interaction, channel_name)
+
+async def create_ticket_channel(bot: Bot, interaction: discord.Interaction, channel_name: str):
+	config = bot.config
+
+	ticket_category = interaction.guild.get_channel(
+		config["canais"]["categoria_tickets"]
+	)
+	ticket_channel = await ticket_category.create_text_channel(name=channel_name)
+	await ticket_channel.edit(topic=str(interaction.user.id))
+
+	overwrite = discord.PermissionOverwrite(send_messages=True, view_channel=True)
+
+	cargos_staffs = config["cargos"]["sacerdotes"]
+
+	await ticket_channel.set_permissions(interaction.user, overwrite=overwrite)
+
+	embed_response = discord.Embed(
+		title="✅ Ticket criado com sucesso!",
+		description="Seu ticket foi criado:",
+		colour=0xffcc00,
+	)
+	view = discord.ui.View()
+	view.add_item(
+		discord.ui.Button(
+			label="Acessar ticket",
+			style=discord.ButtonStyle.link,
+			url=ticket_channel.jump_url,
 		)
-		ticket_channel = await ticket_category.create_text_channel(name=channel_name)
-		await ticket_channel.edit(topic=str(interaction.user.id))
+	)
 
-		overwrite = discord.PermissionOverwrite(send_messages=True, view_channel=True)
+	await interaction.response.send_message(
+		embed=embed_response, ephemeral=True, view=view
+	)
 
-		cargos_staffs = config["cargos"]["sacerdotes"]
+	for _, cargos_staff in cargos_staffs.items():
+		role = interaction.guild.get_role(cargos_staff["id"])
+		if verificar_permissao("atender_tickets", role):
+			await ticket_channel.set_permissions(role, overwrite=overwrite)
 
-		await ticket_channel.set_permissions(interaction.user, overwrite=overwrite)
-
-		embed_response = discord.Embed(
-			title="✅ Ticket criado com sucesso!",
-			description="Seu ticket foi criado:",
-			colour=0xffcc00,
+	if channel_name.startswith("📜"):
+		description = (
+			"Olá! Este é o seu canal de suporte.\n\n"
+			"**Como funciona:**\n"
+			"1 - Apresente-se e explique o porquê de achar ser um bom candidato.\n"
+			"2 - Um membro da equipe irá te atender em breve.\n"
+			"3 - Seja paciente e respeitoso.\n\n"
+			"⚠️ Uso indevido do ticket pode resultar em punições."
 		)
-		view = discord.ui.View()
-		view.add_item(
-			discord.ui.Button(
-				label="Acessar ticket",
-				style=discord.ButtonStyle.link,
-				url=ticket_channel.jump_url,
-			)
+	else:
+		description=(
+			"Olá! Este é o seu canal de suporte.\n\n"
+			"**Como funciona:**\n"
+			"1 - Explique seu problema com detalhes.\n"
+			"2 - Um membro da equipe irá te atender em breve.\n"
+			"3 - Seja paciente e respeitoso.\n\n"
+			"⚠️ Uso indevido do ticket pode resultar em punições."
 		)
 
-		await interaction.response.send_message(
-			embed=embed_response, ephemeral=True, view=view
-		)
+	embed_ticket = discord.Embed(
+		title="Bem-vindo ao Suporte",
+		description=description,
+		colour=0xffcc00,
+	)
+	embed_ticket.set_footer(text=f"Ticket de {interaction.user.display_name}")
+	embed_ticket.set_thumbnail(url=interaction.guild.icon.url)
 
-		for _, cargos_staff in cargos_staffs.items():
-			role = interaction.guild.get_role(cargos_staff["id"])
-			if verificar_permissao("atender_tickets", role):
-				await ticket_channel.set_permissions(role, overwrite=overwrite)
-
-		embed_ticket = discord.Embed(
-			title="Bem-vindo ao Suporte",
-			description=(
-				"Olá! Este é o seu canal de suporte.\n\n"
-				"**Como funciona:**\n"
-				"1 - Explique seu problema com detalhes.\n"
-				"2 - Um membro da equipe irá te atender em breve.\n"
-				"3 - Seja paciente e respeitoso.\n\n"
-				"⚠️ Uso indevido do ticket pode resultar em punições."
-			),
-			colour=0xffcc00,
-		)
-		embed_ticket.set_footer(text=f"Ticket de {interaction.user.display_name}")
-		embed_ticket.set_thumbnail(url=interaction.guild.icon.url)
-
-		await ticket_channel.send(
-			content=f"{interaction.guild.default_role.mention} {interaction.user.mention}",
-			embed=embed_ticket,
-			view=TicketView(self.bot),
-		)
+	await ticket_channel.send(
+		content=f"{interaction.guild.default_role.mention} {interaction.user.mention}",
+		embed=embed_ticket,
+		view=TicketView(bot),
+	)
 
 
 class OpenTicketView(discord.ui.View):
