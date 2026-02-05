@@ -25,9 +25,8 @@ CYRILLIC_TO_LATIN = str.maketrans({
 def normalizar(texto: str) -> str:
 	texto = texto.lower()
 	texto = unicodedata.normalize("NFD", texto)
-	texto = unicodedata.normalize("NFKC", texto)
+	texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
 	texto = texto.translate(CYRILLIC_TO_LATIN)
-	texto = texto.encode("ascii", "ignore").decode("utf-8")
 	texto = texto.replace("0", "o").replace("1", "i").replace("3", "e").replace("4", "a")
 	texto = texto.replace("5", "s").replace("7", "t")
 	texto = re.sub(r"(.)\1{2,}", r"\1", texto)
