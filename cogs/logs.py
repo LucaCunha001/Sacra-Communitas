@@ -78,6 +78,8 @@ class LogsCog(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member: discord.Member):
+		if member.guild.id != 1429152785252876328:
+			return
 		if member.bot:
 			anjo_role_id = self.bot.config['cargos']['anjos']['Anjo']['id']
 			role = member.guild.get_role(anjo_role_id)
