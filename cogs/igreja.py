@@ -928,10 +928,9 @@ class LiturgiaCog(commands.Cog):
 			logging.error(f"Canal {config['canal']} não encontrado.")
 			return
 
-		if agora.hour >= hora_config.hour or (agora.minute > hora_config.minute and agora.hour == hora_config.hour):
-			last = None
-			async for msg in canal.history(limit=1):
-				last = msg
+		if agora.time() >= hora_config:
+			last = [msg async for msg in canal.history(limit=1)]
+			last = last[0] if last else None
 			if last and last.created_at.date() == agora.date() and last.webhook_id:
 				return
 		
