@@ -327,7 +327,7 @@ class Bot(commands.Bot):
 
 		texto = "Roma Locuta, Causa Finita."
 		status = discord.Status.online
-		emoji = discord.PartialEmoji(name="vaticano", id=1466876480838570198)
+		emoji = discord.PartialEmoji.from_str("<:vaticano:1468962682123325552>")
 
 		if not is_unix():
 			texto = "Em manutenção."
