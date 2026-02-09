@@ -17,6 +17,7 @@ class WarnsJson(TypedDict):
 	dado_por: int
 	quando: int
 	motivo: str = ""
+	remocao: bool = False
 
 class ArtigoDict(TypedDict):
 	texto: str

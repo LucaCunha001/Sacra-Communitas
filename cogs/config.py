@@ -151,6 +151,18 @@ class ConfigCog(commands.Cog):
 		)
 		await interaction.response.send_message("Aqui está o arquivo de configuração:", file=file, ephemeral=True)
 
+	@config_gp.command(name="download_members")
+	async def download_members(self, interaction: discord.Interaction):
+		from utils.data import get_members
+
+		config = get_members()
+		json_str = json.dumps(config, indent=4, ensure_ascii=False)
+		file = discord.File(
+			fp=io.StringIO(json_str),
+			filename="config.json"
+		)
+		await interaction.response.send_message("Aqui está o arquivo de membros:", file=file, ephemeral=True)
+
 	@config_gp.command(name="server", description="Define o tipo de servidor.")
 	@commands.is_owner()
 	@app_commands.choices(

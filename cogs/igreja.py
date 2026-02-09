@@ -398,8 +398,19 @@ class SacerdocioCog(commands.Cog):
 
 		await interaction.response.send_message(embed=embed)
 	
+	async def na_saida(self, membro: discord.Member):
+		await self.update_sacerdote(
+			interaction=None,
+			ordinante=self.bot.user,
+			sacerdote=membro,
+			tipo=3,
+			funcao=None,
+			motivo="Saiu do servidor"
+		)
+
 	def nivel_sacerdote(self, sacerdote: discord.Member) -> discord.Role | None:
 		cargos = self.bot.config["cargos"]["sacerdotes"]
+		
 		cargos_sacerdote = [
 			role for role in sacerdote.roles
 			if any(r_dict['id'] == role.id for _, r_dict in cargos.items())
@@ -413,17 +424,18 @@ class SacerdocioCog(commands.Cog):
 		sacerdote: discord.Member,
 		tipo: int,
 		funcao: discord.Role = None,
-		motivo: str | None = None
+		motivo: str | None = None,
+		guild: discord.Guild | None = None
 	):
-		if sacerdote.bot:
+		if sacerdote.bot and interaction is not None:
 			return await interaction.response.send_message("Eu não sei o que te fez pensar que poderia mexer nas permissões de um ser angelical.", ephemeral=True)
 
-		if tipo not in range(4):
+		if tipo not in range(4) and interaction is not None:
 			return await interaction.response.send_message(
 				"Tipo de ação inválido.", ephemeral=True
 			)
 
-		guild = interaction.guild
+		guild = interaction.guild if interaction is not None else sacerdote.guild 
 		config = self.bot.config
 		leigo_cargo = guild.get_role(config["cargos"]["membros"]["Leigo"]["id"])
 		novico_cargo = guild.get_role(config["cargos"]["membros"]["Noviço"]["id"])
@@ -435,7 +447,7 @@ class SacerdocioCog(commands.Cog):
 			for _, cargo_dict in config["cargos"]["sacerdotes"].items()
 		]
 
-		cargo_maximo_atual = self.nivel_sacerdote(sacerdote)
+		cargo_maximo_atual = self.nivel_sacerdote(sacerdote, guild)
 		motivo_txt = f"\n**Motivo:** {motivo}" if motivo else ""
 
 		if tipo == 0:
@@ -524,6 +536,8 @@ class SacerdocioCog(commands.Cog):
 
 		citacao = f"_\u201C{texto}\u201D_ ({res['livro']} {res['capítulo']}{separador}{passagem_txt})"
 
+		no_servidor = guild.get_member(sacerdote.id) is not None
+
 		match tipo:
 			case 0:
 				titulo = "Anunciação Sacra"
@@ -533,8 +547,9 @@ class SacerdocioCog(commands.Cog):
 					f"{citacao}\n\n"
 					"Bendizemos este novo passo em seu ministério, confiando-o à graça de Deus."
 				)
-				await sacerdote.remove_roles(leigo_cargo)
-				await sacerdote.remove_roles(novico_cargo)
+				if no_servidor:
+					await sacerdote.remove_roles(leigo_cargo)
+					await sacerdote.remove_roles(novico_cargo)
 			
 			case 1:
 				titulo = "Proclamação Celeste"
@@ -544,7 +559,7 @@ class SacerdocioCog(commands.Cog):
 					f"{citacao}\n\n"
 					"Rendamos graças por este servo dedicado."
 				)
-				if cargo_maximo_atual and cargo_maximo_atual < bispo_role:
+				if no_servidor and cargo_maximo_atual and cargo_maximo_atual < bispo_role:
 					await sacerdote.remove_roles(cargo_maximo_atual, reason="Promoção")
 
 			case 2:
@@ -555,7 +570,7 @@ class SacerdocioCog(commands.Cog):
 					f"{citacao}\n\n"
 					"Rezemos para que retome, com renovado ardor, o caminho do serviço fiel."
 				)
-				if cargo_maximo_atual:
+				if no_servidor and cargo_maximo_atual:
 					await sacerdote.remove_roles(cargo_maximo_atual, reason="Rebaixamento")
 
 			case 3:
@@ -566,18 +581,20 @@ class SacerdocioCog(commands.Cog):
 					f"{citacao}\n\n"
 					"Confiamos este momento à misericórdia divina."
 				)
-				for _, cargo_dict in self.bot.config["cargos"]["sacerdotes"].items():
-					for r in sacerdote.roles:
-						if r.id == cargo_dict['id']:
-							await sacerdote.remove_roles(r)
-				await sacerdote.add_roles(leigo_cargo)
-				cargo_color = leigo_cargo.color
+				if no_servidor:
+					for _, cargo_dict in self.bot.config["cargos"]["sacerdotes"].items():
+						for r in sacerdote.roles:
+							if r.id == cargo_dict['id']:
+								await sacerdote.remove_roles(r)
+					await sacerdote.add_roles(leigo_cargo)
+					cargo_color = leigo_cargo.color
 
-		if funcao and tipo != 3:
+		if funcao and tipo != 3 and no_servidor:
 			await sacerdote.add_roles(clearo_cargo)
 			await sacerdote.add_roles(funcao)
 
-		await interaction.response.send_message("Cargo alterado com sucesso!", ephemeral=True)
+		if interaction is not None:
+			await interaction.response.send_message("Cargo alterado com sucesso!", ephemeral=True)
 
 		view = ui.LayoutView()
 		container = ui.Container(
@@ -927,8 +944,10 @@ class LiturgiaCog(commands.Cog):
 			await self.bot.send_to_console(f"Canal {config['canal']} não encontrado.")
 			logging.error(f"Canal {config['canal']} não encontrado.")
 			return
-
-		if agora.time() >= hora_config:
+		
+		if agora.time() < hora_config:
+			return
+		else:
 			last = [msg async for msg in canal.history(limit=1)]
 			last = last[0] if last else None
 			if last and last.created_at.date() == agora.date() and last.webhook_id:

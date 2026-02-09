@@ -5,11 +5,9 @@ from discord import app_commands, ui
 from discord.ext import commands
 
 from utils.recursos import Bot, expand_bible_verse
-from utils.data import BibliaDict, carregar_biblia, TestamentoDict, get_config
+from utils.data import BibliaDict, carregar_biblia, TestamentoDict
 
 from typing import Literal
-
-guild_ids = [get_config()["config"]["servidores"]["main"]]
 
 class BibliaCog(commands.Cog):
 	def __init__(self, bot: Bot):

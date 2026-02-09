@@ -15,6 +15,8 @@ from utils.recursos import Bot, expand_bible_verse
 from utils.logs import log_normal, log_punicao, TipoPunicao
 from utils.embed import criar_embed
 
+from .igreja import SacerdocioCog
+
 CYRILLIC_TO_LATIN = str.maketrans({
 	"А": "A", "В": "B", "Е": "E", "К": "K", "М": "M",
 	"Н": "H", "О": "O", "Р": "P", "С": "C", "Т": "T",
@@ -197,7 +199,6 @@ class LogsCog(commands.Cog):
 
 				await msg.author.timeout(duracao, reason="Falando muitos palavrões.")
 			
-
 	async def check_boost_message(self, msg: discord.Message):
 		match msg.type:
 			case discord.MessageType.premium_guild_subscription:
@@ -311,6 +312,9 @@ class LogsCog(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_member_remove(self, membro: discord.Member):
+		cog: SacerdocioCog = self.bot.get_cog("SacerdocioCog")
+		if cog:
+			await cog.na_saida(membro)
 		autor = None
 		motivo = ""
 
@@ -509,7 +513,7 @@ async def setup(bot: Bot):
 
 	@bot.tree.context_menu(name="Recarregar Boost")
 	async def recarregar_boost(interaction: discord.Interaction, msg: discord.Message):
-		cog: LogsCog = interaction.client.get_cog("LogsCog")
+		cog: LogsCog = bot.get_cog("LogsCog")
 		if cog:
 			await cog.check_boost_message(msg)
 			await interaction.response.send_message("Boost recarregado.", ephemeral=True)

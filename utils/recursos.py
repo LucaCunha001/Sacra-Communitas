@@ -344,6 +344,7 @@ class Bot(commands.Bot):
 				except commands.errors.ExtensionAlreadyLoaded:
 					await self.reload_extension(f"cogs.{extension[:-3]}")
 		await self.tree.sync()
+		await self.tree.sync(guild=discord.Object(1464281876507398168))
 	
 	async def send_to_console(self, content: str = None, *, embeds: list[discord.Embed] = None, view: discord.ui.View = None):
 		console = self.get_channel(1462077223140851903)
