@@ -726,11 +726,12 @@ class LiturgiaCog(commands.Cog):
 		ano="Ano para o qual calcular o calendário litúrgico (padrão: ano atual)"
 	)
 	async def calendario(self, interaction: discord.Interaction, ano: int = None):
-		embed = discord.Embed(
-			title="Cálculo do Calendário Litúrgico",
-			description="Aqui estão as datas móveis do calendário litúrgico para o ano atual:\n",
-			color=0xffcc00
-		)
+		cores = {
+			"Quaresma": 0x6A0DAD,
+			"Tríduo Pascal": 0xFFFFFF,
+			"Advento": 0x6A0DAD,
+			"Natal": 0xFF0000
+		}
 		
 		calendario_dict = {
 			"Tempo Comum 1": {
@@ -744,9 +745,7 @@ class LiturgiaCog(commands.Cog):
 			"Tríduo Pascal": {
 				"Quinta-feira Santa": (0, 0),
 				"Sexta-feira Santa": (0, 0),
-				"Sábado Santo": (0, 0)
-			},
-			"Páscoa": {
+				"Sábado Santo": (0, 0),
 				"Domingo de Páscoa": (0, 0)
 			},
 			"Tempo Comum 2": {
@@ -770,7 +769,14 @@ class LiturgiaCog(commands.Cog):
 		Y = datetime.datetime.now().year if ano is None else ano
 		tipos_ano = ["A", "B", "C"]
 		tipo_ano = tipos_ano[(Y - 1) % 3]
-		embed.title += f" - Ano {tipo_ano} ({Y})"
+
+		view = ui.LayoutView()
+		container = ui.Container(
+			ui.TextDisplay(f"## Cálculo do Calendário Litúrgico - Ano {tipo_ano} ({Y})"),
+			ui.TextDisplay("Aqui estão as datas móveis do calendário litúrgico para o ano atual:"),
+			accent_color=0xFFCC00
+		)
+		view.add_item(container)
 
 		def mod(x, y):
 			return x % y
@@ -798,7 +804,7 @@ class LiturgiaCog(commands.Cog):
 				mod(d + e + 21, 31) + 1
 			)
 		
-		calendario_dict["Páscoa"]["Domingo de Páscoa"] = pascoa
+		calendario_dict["Tríduo Pascal"]["Domingo de Páscoa"] = pascoa
 		
 		pascoa_dt = datetime.datetime(year=Y, month=pascoa[0], day=pascoa[1])
 
@@ -853,7 +859,10 @@ class LiturgiaCog(commands.Cog):
 		calendario_dict["Natal"]["Batismo do Senhor"] = (batismo_senhor.month, batismo_senhor.day)
 
 		for tempo, eventos in calendario_dict.items():
-			embed.description += f"\n### {tempo}:\n"
+			new_container = ui.Container(
+				accent_color=cores.get(tempo, 0x008000)
+			)
+			description = f"\n### {tempo}:\n"
 			for evento, (m, d) in eventos.items():
 				data = datetime.date(year=Y, month=m, day=d) if (m != 0 and d != 0) else None
 				if data is not None:
@@ -870,9 +879,12 @@ class LiturgiaCog(commands.Cog):
 						"Saturday": "Sábado"
 					}
 
-					embed.description += f"- **{evento}**: {semana_table.get(dia_semana, dia_semana)}, {data.strftime('%d/%m/%Y')} ({discord.utils.format_dt(data_dt, 'D')})\n"
-		
-		await interaction.response.send_message(embed=embed)
+					description += f"- **{evento}**: {semana_table.get(dia_semana, dia_semana)}, {data.strftime('%d/%m/%Y')} ({discord.utils.format_dt(data_dt, 'D')})\n"
+
+			new_container.add_item(ui.TextDisplay(description))
+			view.add_item(new_container)
+
+		await interaction.response.send_message(view=view)
 
 	config_bp = app_commands.Group(name="config", description="Configurações das funções relacionadas a liturgia diária.", parent=liturgia_gp)
 
@@ -1003,19 +1015,43 @@ class LiturgiaCog(commands.Cog):
 			cores = {"Verde": 0x00FF00, "Branco": 0xFFFFFF, "Vermelho": 0xFF0000, "Azul": 0x0000FF}
 			return cores.get(cor, 0xFFCC00)
 
-		def create_container(title: str, description: str = ""):
-			items = [
-				ui.TextDisplay(f"## {title}"),
-				ui.Separator(spacing=discord.SeparatorSpacing.large),
-			]
+		def create_containers(title: str, description: str = "") -> list[ui.Container]:
+			containers = []
+			partes = split_text(description)
 
-			for parte in split_text(description):
-				items.append(ui.TextDisplay(parte))
+			current_items = []
+			current_length = 0
 
-			return ui.Container(
-				*items,
-				accent_color=get_container_color(liturgia["cor"])
-			)
+			header = f"## {title}"
+			current_items.append(ui.TextDisplay(header))
+			current_length += len(header)
+
+			current_items.append(ui.Separator(spacing=discord.SeparatorSpacing.large))
+
+			for parte in partes:
+				if current_length + len(parte) > MAX_CHARS:
+					containers.append(
+						ui.Container(
+							*current_items,
+							accent_color=get_container_color(liturgia["cor"])
+						)
+					)
+					current_items = []
+					current_length = 0
+
+				current_items.append(ui.TextDisplay(parte))
+				current_length += len(parte)
+
+			if current_items:
+				containers.append(
+					ui.Container(
+						*current_items,
+						accent_color=get_container_color(liturgia["cor"])
+					)
+				)
+
+			return containers
+
 		for key in ["primeiraLeitura", "salmo", "segundaLeitura", "evangelho", "extras"]:
 			leitura = liturgia.get(key)
 			if isinstance(leitura, list) and leitura:
@@ -1036,7 +1072,7 @@ class LiturgiaCog(commands.Cog):
 
 				texto_final = "\n".join(todos_versiculos)
 
-			containers.append(create_container(titulo_base, texto_final))
+			containers.extend(create_containers(titulo_base, texto_final))
 
 		view = ui.LayoutView()
 

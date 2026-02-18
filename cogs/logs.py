@@ -62,6 +62,41 @@ def gerar_variacoes(palavras: list[str]) -> set[str]:
 
 	return variacoes
 
+class GetBumpRow(ui.ActionRow):
+	def __init__(self):
+		super().__init__()
+	
+	@ui.button(custom_id="get_bump", emoji="⬆️", label="Pegar Cargo", style=discord.ButtonStyle.blurple)
+	async def get_bump_role(self, interaction: discord.Interaction, button: ui.Button):
+		cargo = interaction.guild.get_role(1442131698732105840)
+		reason = "Menção de bumps"
+		if cargo in interaction.user.roles:
+			await interaction.user.remove_roles(cargo, reason=reason)
+			return await interaction.response.send_message(f"{cargo.mention} removido com sucesso!", ephemeral=True)
+
+		await interaction.user.add_roles(cargo, reason=reason)
+		await interaction.response.send_message(f"{cargo.mention} adicionado com sucesso!", ephemeral=True)
+
+class GetBumpRole(ui.LayoutView):
+	def __init__(self, guild: discord.Guild):
+		super().__init__(timeout=None)
+		container = ui.Container(
+			ui.Section(
+				ui.TextDisplay("## Pegue a menção de Bumps"),
+				accessory=ui.Thumbnail(guild.icon.url) if guild.icon else None
+			)
+		)
+		container.add_item(
+			ui.TextDisplay("Clique no botão abaixo para receber o cargo de marcação de Bumps. Toda vez que um Bump pode ser dado na Disboard, você será notificado.")
+		)
+
+		row = GetBumpRow()
+		container.add_item(row)
+
+		container.add_item(ui.TextDisplay("-# Sacra Communitas - Bumps"))
+
+		self.add_item(container)
+
 class LogsCog(commands.Cog):
 	def __init__(self, bot: Bot):
 		self.bot = bot
@@ -117,6 +152,7 @@ class LogsCog(commands.Cog):
 	async def on_message(self, msg: discord.Message):		
 		await self.publish_if_news(msg=msg)
 		await self.check_boost_message(msg=msg)
+		await self.check_bump_msg(msg=msg)
 		
 		if msg.author.bot:
 			return
@@ -124,7 +160,7 @@ class LogsCog(commands.Cog):
 		await check_cic_verse(msg=msg)
 		await self.check_bible_verse(msg=msg)
 		await self.check_badword(msg=msg)
-	
+
 	async def publish_if_news(self, msg: discord.Message):
 		if msg.channel.type != discord.ChannelType.news:
 			return
@@ -263,6 +299,18 @@ class LogsCog(commands.Cog):
 					await msg.reply(view=view)
 				else:
 					await msg.channel.send(view=view)
+
+	async def check_bump_msg(self, msg: discord.Message):
+		if msg.author.id == 302050872383242240 and msg.embeds:
+			embed = msg.embeds[0]
+
+			async for message in msg.channel.history(limit=20):
+				if message.author == self.bot.user:
+					await message.delete()
+					break
+					
+			if embed.description and "Bump done" in embed.description:
+				await msg.channel.send(view=GetBumpRole(msg.guild))
 
 	@commands.Cog.listener()
 	async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -510,6 +558,7 @@ class LogsCog(commands.Cog):
 
 async def setup(bot: Bot):
 	await bot.add_cog(LogsCog(bot))
+	bot.add_view(GetBumpRole(bot.get_guild(1429152785252876328)))
 
 	@bot.tree.context_menu(name="Recarregar Boost")
 	async def recarregar_boost(interaction: discord.Interaction, msg: discord.Message):
