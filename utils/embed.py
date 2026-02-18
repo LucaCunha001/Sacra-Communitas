@@ -2,9 +2,12 @@ from discord import Embed, Color, User, Guild
 
 from .data import get_embeds
 
+def open_embed(embed_key: str) -> list[dict] | dict:
+	return get_embeds()[embed_key]
+
 def convert_embed(embed_key: str) -> list[Embed]:
 	embeds = []
-	embed_data = get_embeds()[embed_key]
+	embed_data = open_embed(embed_key)
 
 	if isinstance(embed_data, list):
 		for data in embed_data:

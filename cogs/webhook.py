@@ -4,8 +4,7 @@ import discord
 from discord import app_commands, Webhook, ui
 from discord.ext import commands
 
-from utils.data import get_config
-from utils.embed import convert_embed
+from utils.embed import open_embed
 from utils.recursos import Bot
 
 from typing import TypedDict, Optional
@@ -103,8 +102,7 @@ class WebhookCog(commands.Cog):
 	webhook_group = app_commands.Group(
 		name="webhook",
 		description="Comandos relacionados a webhooks",
-		default_permissions=discord.Permissions(manage_webhooks=True),
-		guild_ids=[get_config()["config"]["servidores"]["main"]],
+		default_permissions=discord.Permissions(manage_webhooks=True)
 	)
 
 	@webhook_group.command(
@@ -137,7 +135,7 @@ class WebhookCog(commands.Cog):
 		)
 
 	def get_webhook_embeds(self, embed_key: str):
-		return convert_embed(embed_key)
+		return open_embed(embed_key)
 
 
 async def setup(bot: Bot):

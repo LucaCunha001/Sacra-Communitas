@@ -191,7 +191,7 @@ async def create_ticket_channel(bot: Bot, interaction: discord.Interaction, chan
 	embed_ticket.set_thumbnail(url=interaction.guild.icon.url)
 
 	await ticket_channel.send(
-		content=f"{interaction.guild.default_role.mention} {interaction.user.mention}",
+		content=f"@everyone {interaction.user.mention}",
 		embed=embed_ticket,
 		view=TicketView(bot),
 	)
