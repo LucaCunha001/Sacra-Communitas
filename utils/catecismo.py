@@ -1,4 +1,5 @@
 import discord
+import os
 import re
 import requests
 
@@ -210,7 +211,7 @@ URLS = {
 		"2": {
 			"null": "https://www.vatican.va/archive/cathechism_po/index_new/p2s2cap1_1210-1419_po.html",
 			"1": "https://www.vatican.va/archive/cathechism_po/index_new/p2s2cap1_1210-1419_po.html",
-			"2": "https://www.vatican.va/archive/cathechism_po/index_new/p2s2cap2_1420-1532_po.html",
+			"2": "https://www.vatican.va/archive/cathechism_po/index_new/p2s2cap1_1420-1532_po.html",
 			"3": "https://www.vatican.va/archive/cathechism_po/index_new/p2s2cap3_1533-1666_po.html",
 			"4": "https://www.vatican.va/archive/cathechism_po/index_new/p2s2cap4_1667-1690_po.html"
 		}
@@ -256,81 +257,91 @@ def get_url(parte: int, secao: int, capitulo: int | None = None):
 	return url, titulo
 
 
+def descobrir_bloco(n: int):
+	prologo = PAGINAS["prologo"]
+	if prologo["p_init"] <= n <= prologo["p_end"]:
+		return 0, 0, None
+
+	for i, chave in enumerate(["p_parte", "s_parte", "t_parte", "q_parte"], start=1):
+		parte = PAGINAS[chave]
+
+		intro = parte.get("introducao")
+		if intro and intro["p_init"] <= n <= intro["p_end"]:
+			return i, 0, None
+
+		for secao_idx, secao_key in enumerate(["ps", "ss"], start=1):
+			secao = parte.get(secao_key)
+			if not secao:
+				continue
+
+			if secao.get("p_init") and secao.get("p_end"):
+				if secao["p_init"] <= n <= secao["p_end"]:
+					return i, secao_idx, None
+
+			for cap_idx, cap in enumerate(secao.get("capitulos") or [], start=1):
+				if cap["p_init"] <= n <= cap["p_end"]:
+					return i, secao_idx, cap_idx
+
+	return None, None, None
+
+def extrair_intervalo(p_init: int, p_end: int):
+	textos = []
+	cache = {}
+	last_url = None
+	pars = {}
+	titulo = None
+	parte_base = None
+	secao_base = None
+	capitulo_base = None
+
+	for n in range(p_init, p_end + 1):
+		parte, secao, capitulo = descobrir_bloco(n)
+		if parte is None:
+			continue
+
+		url, titulo_atual = get_url(parte, secao, capitulo)
+
+		if parte_base is None:
+			parte_base = parte
+			secao_base = secao
+			capitulo_base = capitulo
+			titulo = titulo_atual
+
+		if url != last_url:
+			if url not in cache:
+				cache[url] = baixar_e_extrair(url)
+			pars = cache[url]
+			last_url = url
+
+		if n in pars:
+			textos.append(f"**§{n}.** {pars[n]}")
+
+	return {
+		"p_init": p_init,
+		"p_end": p_end,
+		"texto": textos,
+		"titulo": titulo,
+		"parte": parte_base,
+		"secao": secao_base,
+		"capitulo": capitulo_base
+	}
+
 def extract_cic(texto: str):
 	data = []
 	textos = (t_ for t in texto.split(";") for t_ in t.split("\n"))
 
 	pattern = r"(?:CIC\s*)?[§$]+\s*(\d+)(?:\s*-\s*(\d+))?"
-	
+
 	for texto in textos:
 		for match_ in re.finditer(pattern, texto.upper()):
-			if not match_:
-				continue
-
 			p_init = int(match_.group(1))
 			p_end = int(match_.group(2)) if match_.group(2) else p_init
 
-			def dentro(n, bloco):
-				return bloco and bloco.get("p_init") and bloco.get("p_end") and bloco["p_init"] <= n <= bloco["p_end"]
+			intervalo = extrair_intervalo(p_init, p_end)
 
-			parte_num = 0
-			secao_num = 0
-			capitulo_num = None
+			if intervalo["texto"]:
+				data.append(intervalo)
 
-			prologo = PAGINAS["prologo"]
-			if prologo["p_init"] <= p_init <= prologo["p_end"]:
-				parte_num = 0
-			else:
-				for i, chave in enumerate(["p_parte", "s_parte", "t_parte", "q_parte"], start=1):
-					parte = PAGINAS[chave]
-
-					intro = parte.get("introducao")
-					if intro and intro["p_init"] <= p_init <= intro["p_end"]:
-						parte_num = i
-						secao_num = 0
-						break
-
-					for secao_idx, secao_key in enumerate(["ps", "ss"], start=1):
-						secao = parte.get(secao_key)
-						if not secao:
-							continue
-
-						if secao.get("p_init") and secao.get("p_end"):
-							if secao["p_init"] <= p_init <= secao["p_end"]:
-								parte_num = i
-								secao_num = secao_idx
-								capitulo_num = None
-								break
-
-						caps = secao.get("capitulos") or []
-						for cap_idx, cap in enumerate(caps, start=1):
-							if cap["p_init"] <= p_init <= cap["p_end"]:
-								parte_num = i
-								secao_num = secao_idx
-								capitulo_num = cap_idx
-								break
-
-						if parte_num:
-							break
-
-					if parte_num:
-						break
-
-			url, titulo = get_url(parte_num, secao_num, capitulo_num)
-			pars = baixar_e_extrair(url)
-
-			trechos = [pars[n] for n in range(p_init, p_end + 1) if n in pars]
-			texto = [f"**§{i+p_init}.** {trecho}" for i, trecho in enumerate(trechos)]
-
-			data.append({
-				"p_init": p_init,
-				"p_end": p_end,
-				"texto": texto,
-				"titulo": titulo,
-				"parte": parte_num,
-				"secao": secao_num,
-				"capitulo": capitulo_num
-			})
 	return data
 
 def baixar_e_extrair(url: str):
@@ -427,3 +438,34 @@ async def check_cic_verse(msg: discord.Message):
 				await msg.reply(view=view)
 			else:
 				await msg.channel.send(view=view)
+
+def check_all_urls(urls_dict: dict):
+	os.system("cls" if os.name == "nt" else "clear")
+
+	def walk(d, path=""):
+		for key, value in d.items():
+			current_path = f"{path}/{key}" if path else key
+
+			if isinstance(value, dict):
+				walk(value, current_path)
+			else:
+				check_url(value, current_path)
+
+	def check_url(url: str, path: str):
+		try:
+			resp = requests.head(url, allow_redirects=True, timeout=5)
+			status = resp.status_code
+
+			if status == 200:
+				print(f"\033[92m✔ {path} -> {status}\033[0m")
+			else:
+				end = url.split("/")[-1]
+				print(f"\033[91m✘ {path} -> {status} ({end})\033[0m")
+
+		except requests.RequestException as e:
+			print(f"\033[91m✘ {path} -> ERRO ({e})\033[0m ")
+
+	walk(urls_dict)
+
+if __name__ == "__main__":
+	check_all_urls(URLS)

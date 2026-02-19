@@ -15,7 +15,7 @@ from utils.recursos import Bot, expand_bible_verse
 from utils.logs import log_normal, log_punicao, TipoPunicao
 from utils.embed import criar_embed
 
-from .igreja import SacerdocioCog
+from .sacerdocio import SacerdocioCog
 
 CYRILLIC_TO_LATIN = str.maketrans({
 	"А": "A", "В": "B", "Е": "E", "К": "K", "М": "M",
@@ -361,7 +361,7 @@ class LogsCog(commands.Cog):
 	@commands.Cog.listener()
 	async def on_member_remove(self, membro: discord.Member):
 		cog: SacerdocioCog = self.bot.get_cog("SacerdocioCog")
-		if cog:
+		if cog and any(r.id == 1429794483297456160 for r in membro.roles):
 			await cog.na_saida(membro)
 		autor = None
 		motivo = ""
