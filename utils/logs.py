@@ -1,8 +1,47 @@
 import datetime
 import discord
 
+from discord import ui
+
 from enum import Enum
 from .data import get_config
+
+
+class PunicaoLayout(discord.ui.LayoutView):
+	def __init__(self, titulo: str, descricao: str, cor: int, membro: discord.User, autor: discord.Member | None, motivo: str | None):
+		super().__init__(timeout=None)
+
+		container = ui.Container(
+			ui.Section(
+				ui.TextDisplay(
+					f"# {titulo}\n"
+					f"{descricao}\n"
+				),
+				accessory=ui.Thumbnail(membro.display_avatar.url)
+			),
+			accent_color=cor
+		)
+
+		info_lines = [f"**Membro:** {membro.mention}"]
+
+		if autor:
+			info_lines.append(f"**Responsável:** {autor.mention}")
+
+		if motivo:
+			info_lines.append(f"**Motivo:** {motivo}")
+
+		time = int(datetime.datetime.now().timestamp())
+
+		info_lines.append(f"-# <t:{time}:F> (<t:{time}:R>)")
+
+		info = "\n".join(info_lines)
+
+		container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.large))
+
+		container.add_item(
+			discord.ui.TextDisplay(info)
+		)
+		self.add_item(container)
 
 class TipoPunicao(Enum):
 	Excomunhao = 0
@@ -29,69 +68,52 @@ async def log_punicao(
 		case 0:  # Excomunhão / Ban
 			titulo = "Excomunhão aplicada!"
 			cor = 0xff0000
-			descricao = (
-				f"{membro.mention} foi removido permanentemente da comunidade, "
-				"em consequência de ação grave contra a ordem e doutrina."
-				f"\n> Decisão aplicada por: {author.mention}"
-			)
+			descricao = f"{membro.mention} foi removido permanentemente da comunidade, em consequência de ação grave contra a ordem e doutrina."
 
 		case 1:  # Penitência / Mute
 			titulo = "Penitência imposta"
 			cor = 0xffff00
-			descricao = (
-				f"{membro.mention} foi colocado em silêncio temporário para reflexão espiritual."
-				f"\n> Determinada por: {author.mention}"
-			)
+			descricao = f"{membro.mention} foi colocado em silêncio temporário para reflexão espiritual."
 
 		case 2:  # Admoestação / Warn
 			titulo = "Admoestação concedida"
 			cor = 0xff6600
-			descricao = (
-				f"{membro.mention} recebeu uma advertência formal."
-				f"\n> Concedida por: {author.mention}"
-			)
+			descricao = f"{membro.mention} recebeu uma advertência formal."
 
 		case 3:  # Revogação de excomunhão / Ban remove
 			titulo = "Comunhão restaurada"
 			cor = 0x00ff00
-			descricao = (
-				f"{membro.mention} foi reintegrado à comunidade."
-				f"\n> Restaurado por: {author.mention}"
-			)
+			descricao = f"{membro.mention} foi reintegrado à comunidade."
 
 		case 4:  # Revogação de penitência / Mute remove
 			titulo = "Penitência concluída"
 			cor = 0x00ff00
-			descricao = (
-				f"{membro.mention} teve seu silêncio removido."
-				f"\n> Liberado por: {author.mention}"
-			)
+			descricao = f"{membro.mention} teve seu silêncio removido."
 
 		case 5:  # Revogação de admoestação / Warn remove
 			titulo = "Admoestação removida"
 			cor = 0x00ff00
-			descricao = (
-				f"A advertência de {membro.mention} foi removida."
-				f"\n> Revogada por: {author.mention}"
-			)
+			descricao = f"A advertência de {membro.mention} foi removida."
 
 		case 6:  # Suspensão / Kick
 			titulo = "Suspensão aplicada"
 			cor = 0xc27c0e
-			descricao = (
-				f"{membro.mention} foi temporariamente removido da comunidade para preservar a ordem."
-				f"\n> Decisão tomada por: {author.mention}"
-			)
+			descricao = f"{membro.mention} foi temporariamente removido da comunidade para preservar a ordem."
 		
 		case _:
 			return
 
-	if motivo:
-		descricao += f"\n> Motivo: {motivo}"
+	view = PunicaoLayout(
+		titulo,
+		descricao,
+		cor,
+		membro,
+		author,
+		motivo
+	)
 
-	embed = make_embed(titulo, descricao, cor, user=membro)
 	if canal_punicoes:
-		await canal_punicoes.send(embed=embed)
+		await canal_punicoes.send(view=view)
 
 async def log_normal(
 	guild: discord.Guild,

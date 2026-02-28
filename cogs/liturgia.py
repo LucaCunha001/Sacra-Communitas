@@ -311,7 +311,7 @@ class LiturgiaCog(commands.Cog):
 
 
 		def get_container_color(cor: str):
-			cores = {"Verde": 0x00FF00, "Branco": 0xFFFFFF, "Vermelho": 0xFF0000, "Azul": 0x0000FF}
+			cores = {"Verde": 0x00FF00, "Branco": 0xFFFFFF, "Vermelho": 0xFF0000, "Azul": 0x0000FF, "Roxo": 0x6A0DAD}
 			return cores.get(cor, 0xFFCC00)
 
 		def create_containers(title: str, description: str = "") -> list[ui.Container]:
