@@ -1,7 +1,8 @@
+import aiohttp
+import asyncio
 import discord
 import os
 import re
-import requests
 
 from bs4 import BeautifulSoup
 from discord import ui
@@ -244,6 +245,10 @@ URLS = {
 	}
 }
 
+
+session: aiohttp.ClientSession | None = None
+
+
 def get_url(parte: int, secao: int, capitulo: int | None = None):
 	parte_k = str(parte)
 	secao_k = str(secao)
@@ -284,7 +289,7 @@ def descobrir_bloco(n: int):
 
 	return None, None, None
 
-def extrair_intervalo(p_init: int, p_end: int):
+async def extrair_intervalo(p_init: int, p_end: int):
 	textos = []
 	cache = {}
 	last_url = None
@@ -309,7 +314,7 @@ def extrair_intervalo(p_init: int, p_end: int):
 
 		if url != last_url:
 			if url not in cache:
-				cache[url] = baixar_e_extrair(url)
+				cache[url] = await baixar_e_extrair(url)
 			pars = cache[url]
 			last_url = url
 
@@ -326,7 +331,7 @@ def extrair_intervalo(p_init: int, p_end: int):
 		"capitulo": capitulo_base
 	}
 
-def extract_cic(texto: str):
+async def extract_cic(texto: str):
 	data = []
 	textos = (t_ for t in texto.split(";") for t_ in t.split("\n"))
 
@@ -337,18 +342,20 @@ def extract_cic(texto: str):
 			p_init = int(match_.group(1))
 			p_end = int(match_.group(2)) if match_.group(2) else p_init
 
-			intervalo = extrair_intervalo(p_init, p_end)
+			intervalo = await extrair_intervalo(p_init, p_end)
 
 			if intervalo["texto"]:
 				data.append(intervalo)
 
 	return data
+	
+async def baixar_e_extrair(url: str):
+	async with session.get(url) as resp:
+		resp.raise_for_status()
+		html = await resp.text()
+		await resp.release()
 
-def baixar_e_extrair(url: str):
-	resp = requests.get(url)
-	resp.raise_for_status()
-
-	soup = BeautifulSoup(resp.text, "html.parser")
+	soup = BeautifulSoup(html, "html.parser")
 	paragrafos = {}
 
 	for p in soup.find_all("p"):
@@ -370,10 +377,11 @@ def baixar_e_extrair(url: str):
 			"actor": "ator",
 			"actos": "atos"
 		}
-		
+
 		palavras_variacoes = {}
 
 		for antiga, nova in palavras.items():
+			palavras_variacoes[antiga] = nova
 			palavras_variacoes[antiga.capitalize()] = nova.capitalize()
 			palavras_variacoes[antiga.upper()] = nova.upper()
 
@@ -384,9 +392,8 @@ def baixar_e_extrair(url: str):
 
 	return paragrafos
 
-
 async def check_cic_verse(msg: discord.Message):
-	datas = extract_cic(msg.content)
+	datas = await extract_cic(msg.content)
 	for data in datas:
 		if not data:
 			return
@@ -439,22 +446,27 @@ async def check_cic_verse(msg: discord.Message):
 			else:
 				await msg.channel.send(view=view)
 
-def check_all_urls(urls_dict: dict):
+async def check_all_urls(urls_dict: dict):
 	os.system("cls" if os.name == "nt" else "clear")
 
-	def walk(d, path=""):
+	new_session = aiohttp.ClientSession()
+	load_session(new_session)
+
+	async def walk(d, path=""):
 		for key, value in d.items():
 			current_path = f"{path}/{key}" if path else key
 
 			if isinstance(value, dict):
-				walk(value, current_path)
+				await walk(value, current_path)
 			else:
-				check_url(value, current_path)
+				await check_url(value, current_path)
 
-	def check_url(url: str, path: str):
+	async def check_url(url: str, path: str):
 		try:
-			resp = requests.head(url, allow_redirects=True, timeout=5)
-			status = resp.status_code
+			async with session.get(url, allow_redirects=True, timeout=5) as res:
+				resp = res
+			status = resp.status
+			await resp.release()
 
 			if status == 200:
 				print(f"\033[92m✔ {path} -> {status}\033[0m")
@@ -462,10 +474,20 @@ def check_all_urls(urls_dict: dict):
 				end = url.split("/")[-1]
 				print(f"\033[91m✘ {path} -> {status} ({end})\033[0m")
 
-		except requests.RequestException as e:
+		except Exception as e:
 			print(f"\033[91m✘ {path} -> ERRO ({e})\033[0m ")
 
-	walk(urls_dict)
+	await walk(urls_dict)
+
+	await new_session.close() 
+
+def load_session(new_session: aiohttp.ClientSession):
+	global session
+	session = new_session
+
+async def close_session():
+	global session
+	await session.close()
 
 if __name__ == "__main__":
-	check_all_urls(URLS)
+	asyncio.run(check_all_urls(URLS))

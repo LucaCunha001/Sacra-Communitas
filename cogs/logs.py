@@ -1,3 +1,4 @@
+import aiohttp
 import datetime
 import discord
 import unicodedata
@@ -9,7 +10,7 @@ from better_profanity import profanity
 from discord import ui
 from discord.ext import commands
 
-from utils.catecismo import check_cic_verse
+from utils.catecismo import check_cic_verse, load_session
 from utils.data import DataFiles, get_member, save_member
 from utils.recursos import Bot, expand_bible_verse
 from utils.logs import log_normal, log_punicao, TipoPunicao
@@ -100,6 +101,7 @@ class GetBumpRole(ui.LayoutView):
 class LogsCog(commands.Cog):
 	def __init__(self, bot: Bot):
 		self.bot = bot
+		self.session: aiohttp.ClientSession | None = None
 	
 	@commands.command(name="badwords", description="Veja a quantidade de palavrões que alguém falou.")
 	async def badwords_count(self, ctx: commands.Context, member: discord.User = None):
@@ -555,6 +557,13 @@ class LogsCog(commands.Cog):
 	async def on_member_update(self, before: discord.Member, after: discord.Member):
 		await self.verificar_timeout(before, after)
 		await self.verificar_cargos(before, after)
+
+	async def cog_load(self):
+		self.session = aiohttp.ClientSession()
+		load_session(self.session)
+
+	async def cog_unload(self):
+		await self.session.close()
 
 async def setup(bot: Bot):
 	await bot.add_cog(LogsCog(bot))
