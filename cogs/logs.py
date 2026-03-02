@@ -155,6 +155,7 @@ class LogsCog(commands.Cog):
 		await self.publish_if_news(msg=msg)
 		await self.check_boost_message(msg=msg)
 		await self.check_bump_msg(msg=msg)
+		await self.check_invite(msg=msg)
 		
 		if msg.author.bot:
 			return
@@ -176,6 +177,59 @@ class LogsCog(commands.Cog):
 			await self.bot.send_to_console("Não tenho permissão para publicar mensagens.")
 		except Exception as e:
 			await self.bot.send_to_console(f"Ocorreu um erro ao publicar a mensagems: {e.text}")
+
+	async def check_invite(self, msg: discord.Message):
+		if msg.channel.category_id in [1441938029391511604, 1431318653436952727]:
+			return
+
+		if msg.guild.owner_id == msg.author.id:
+			return
+
+		pattern = re.compile(
+			r"discord\.(?:gg|com\/invite)\/([a-zA-Z0-9_-]+)",
+			flags=re.MULTILINE | re.UNICODE
+		)
+
+		matches = list(pattern.finditer(msg.content))
+
+		if not matches:
+			return
+
+		layoutview = ui.LayoutView()
+
+		for m in matches:
+			convite_id = m.group(1)
+
+			try:
+				convite = await self.bot.fetch_invite(convite_id)
+			except Exception:
+				continue
+
+			guild = convite.guild
+
+			if guild.id == msg.guild.id:
+				continue
+
+			container = ui.Container(
+				ui.Section(
+					ui.TextDisplay("## Convite para servidor detectado!"),
+					accessory=ui.Thumbnail(guild.icon.url)
+				),
+				ui.TextDisplay(f"{msg.author.mention} enviou um convite para **{guild.name}**."),
+				ui.TextDisplay(f"Convite usado: `{convite.url}`"),
+				ui.TextDisplay("### Informações do servidor:"),
+				ui.TextDisplay(f"**Descrição:**\n>{guild.description or 'Nenhuma'}"),
+			)
+
+			layoutview.add_item(container)
+
+		await msg.author.timeout(datetime.timedelta(hours=1))
+		await msg.reply("Não é permitido a divulgação de servidores.")
+		await msg.delete()
+
+		log = self.bot.get_channel(1477706037472657671)
+		if log:
+			await log.send(view=layoutview)
 
 	async def check_badword(self, msg: discord.Message):
 		if not msg.guild:
@@ -330,6 +384,7 @@ class LogsCog(commands.Cog):
 			msg_after=after,
 		)
 		await self.check_badword(msg=after)
+		await self.check_invite(msg=after)
 
 	@commands.Cog.listener()
 	async def on_message_delete(self, msg: discord.Message):

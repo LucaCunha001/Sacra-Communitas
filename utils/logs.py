@@ -8,7 +8,7 @@ from .data import get_config
 
 
 class PunicaoLayout(discord.ui.LayoutView):
-	def __init__(self, titulo: str, descricao: str, cor: int, membro: discord.User, autor: discord.Member | None, motivo: str | None):
+	def __init__(self, titulo: str, descricao: str, cor: int, membro: discord.User, autor: discord.Member | None, motivo: str | None, extras: dict | None = None):
 		super().__init__(timeout=None)
 
 		container = ui.Container(
@@ -29,6 +29,10 @@ class PunicaoLayout(discord.ui.LayoutView):
 
 		if motivo:
 			info_lines.append(f"**Motivo:** {motivo}")
+		
+		if extras:
+			for key, value in extras.items():
+				info_lines.append(f"**{key}:** {value}")
 
 		time = int(datetime.datetime.now().timestamp())
 
@@ -55,47 +59,82 @@ class TipoPunicao(Enum):
 async def log_punicao(
 	guild: discord.Guild,
 	tipo: TipoPunicao | int,
-	membro: discord.User,
+	membro: discord.User | discord.Member,
 	author: discord.Member = None,
 	motivo: str = None,
 ):
-	if isinstance(tipo, TipoPunicao):
-		tipo=tipo.value
+	if isinstance(tipo, int):
+		tipo=TipoPunicao(tipo)
 
 	canal_punicoes = guild.get_channel(get_config()["canais"]["punicoes"])
+	extras = None
 
 	match tipo:
-		case 0:  # Excomunhão / Ban
+		case TipoPunicao.Excomunhao:  # Excomunhão / Ban
 			titulo = "Excomunhão aplicada!"
 			cor = 0xff0000
 			descricao = f"{membro.mention} foi removido permanentemente da comunidade, em consequência de ação grave contra a ordem e doutrina."
 
-		case 1:  # Penitência / Mute
+		case TipoPunicao.Penitencia: # Penitência / Mute
 			titulo = "Penitência imposta"
 			cor = 0xffff00
 			descricao = f"{membro.mention} foi colocado em silêncio temporário para reflexão espiritual."
 
-		case 2:  # Admoestação / Warn
+			if not membro.timed_out_until:
+				duracao_str = "Indefinido"
+				fim_str = "Indefinido"
+			else:
+				agora = datetime.datetime.now(datetime.timezone.utc)
+				delta = membro.timed_out_until - agora
+
+				total_segundos = max(0, int(delta.total_seconds()))
+
+				dias, resto = divmod(total_segundos, 86400)
+				horas, resto = divmod(resto, 3600)
+				minutos, segundos = divmod(resto, 60)
+
+				duracao = []
+				if dias:
+					duracao.append(f"{dias}d")
+				if horas:
+					duracao.append(f"{horas}h")
+				if minutos:
+					duracao.append(f"{minutos}m")
+				if segundos:
+					duracao.append(f"{segundos}s")
+
+				duracao_str = " ".join(duracao) if duracao else "Expirando..."
+				fim_str = (
+					f"{discord.utils.format_dt(membro.timed_out_until, style='R')} "
+					f"{discord.utils.format_dt(membro.timed_out_until, style='f')}"
+				)
+
+			extras = {
+				"Duração": duracao_str,
+				"Fim": fim_str
+			}
+
+		case TipoPunicao.Admoestacao:  # Admoestação / Warn
 			titulo = "Admoestação concedida"
 			cor = 0xff6600
 			descricao = f"{membro.mention} recebeu uma advertência formal."
 
-		case 3:  # Revogação de excomunhão / Ban remove
+		case TipoPunicao.ComunhaoRestaurada:  # Revogação de excomunhão / Ban remove
 			titulo = "Comunhão restaurada"
 			cor = 0x00ff00
 			descricao = f"{membro.mention} foi reintegrado à comunidade."
 
-		case 4:  # Revogação de penitência / Mute remove
+		case TipoPunicao.RevogacaoPenitencia:  # Revogação de penitência / Mute remove
 			titulo = "Penitência concluída"
 			cor = 0x00ff00
 			descricao = f"{membro.mention} teve seu silêncio removido."
 
-		case 5:  # Revogação de admoestação / Warn remove
+		case TipoPunicao.RevogacaoAdmoestacao:  # Revogação de admoestação / Warn remove
 			titulo = "Admoestação removida"
 			cor = 0x00ff00
 			descricao = f"A advertência de {membro.mention} foi removida."
 
-		case 6:  # Suspensão / Kick
+		case TipoPunicao.Suspensao:  # Suspensão / Kick
 			titulo = "Suspensão aplicada"
 			cor = 0xc27c0e
 			descricao = f"{membro.mention} foi temporariamente removido da comunidade para preservar a ordem."
@@ -109,7 +148,8 @@ async def log_punicao(
 		cor,
 		membro,
 		author,
-		motivo
+		motivo,
+		extras
 	)
 
 	if canal_punicoes:
