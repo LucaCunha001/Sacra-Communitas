@@ -12,9 +12,8 @@ from discord.ext import commands
 
 from utils.catecismo import check_cic_verse, load_session
 from utils.data import DataFiles, get_member, save_member
-from utils.recursos import Bot, expand_bible_verse
 from utils.logs import log_normal, log_punicao, TipoPunicao
-from utils.embed import criar_embed
+from utils.recursos import Bot, expand_bible_verse
 
 from .sacerdocio import SacerdocioCog
 
@@ -122,13 +121,13 @@ class LogsCog(commands.Cog):
 		if member.bot:
 			anjo_role_id = self.bot.config['cargos']['anjos']['Anjo']['id']
 			role = member.guild.get_role(anjo_role_id)
-			return await member.add_roles(role, reason="Novo membro entrou: Bot")
+			return await member.add_roles(role, reason="Novo bot entrou")
 
 		leigo_role_id = self.bot.config['cargos']['membros']['Leigo']['id']
 		role = member.guild.get_role(leigo_role_id)
 		if role:
 			try:
-				await member.add_roles(role, reason="Novo membro entrou: Leigo")
+				await member.add_roles(role, reason="Novo membro entrou")
 			except discord.Forbidden:
 				print(f"Sem permissão para adicionar cargo ao membro {member}")
 			except discord.HTTPException as e:
@@ -140,15 +139,24 @@ class LogsCog(commands.Cog):
 		channel = self.bot.get_channel(channel_id) if channel_id else None
 
 		if channel:
-			embed = criar_embed(
-				titulo="✨ Bem-vindo(a)!",
-				descricao=f"Seja bem-vindo(a) ao servidor, {member.mention}!\n\nLeia as regras em {regras_mention} e aproveite sua estadia!",
-				cor=0xffcc00,
-				membro=member,
-				footer="Leigo",
-				servidor=member.guild
+			view = ui.LayoutView()
+			container = ui.Container(
+				ui.Section(
+					ui.TextDisplay(
+						"## ✨ Bem-vindo(a)!"
+					),
+					accessory=member.display_avatar.url
+				),
+				ui.TextDisplay(
+					f"Seja bem-vindo(a) ao servidor, {member.mention}!\n\nLeia as regras em {regras_mention} e aproveite sua estadia!"
+				),
+				ui.TextDisplay(
+					f"-# {member.name} • Leigo"
+				),
+				accent_color=0xffcc00
 			)
-			await channel.send(content=member.mention, embed=embed)
+			view.add_item(container)
+			await channel.send(view=view)
 	
 	@commands.Cog.listener()
 	async def on_message(self, msg: discord.Message):		
