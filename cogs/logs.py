@@ -1,19 +1,22 @@
 import aiohttp
+import chat_exporter
 import datetime
 import discord
+import io
 import unicodedata
 import random
 import re
 
+from bs4 import BeautifulSoup
 from better_profanity import profanity
 
-from discord import ui
+from discord import ui, app_commands
 from discord.ext import commands
 
 from utils.catecismo import check_cic_verse, load_session
 from utils.data import DataFiles, get_member, save_member
 from utils.logs import log_normal, log_punicao, TipoPunicao
-from utils.recursos import Bot, expand_bible_verse
+from utils.recursos import Bot, expand_bible_verse, _personalize_transcript
 
 from .sacerdocio import SacerdocioCog
 
@@ -116,15 +119,18 @@ class LogsCog(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_member_join(self, member: discord.Member):
-		if member.guild.id != 1429152785252876328:
+		guild = member.guild
+		
+		if guild.id != 1429152785252876328:
 			return
+		
 		if member.bot:
 			anjo_role_id = self.bot.config['cargos']['anjos']['Anjo']['id']
-			role = member.guild.get_role(anjo_role_id)
+			role = guild.get_role(anjo_role_id)
 			return await member.add_roles(role, reason="Novo bot entrou")
 
 		leigo_role_id = self.bot.config['cargos']['membros']['Leigo']['id']
-		role = member.guild.get_role(leigo_role_id)
+		role = guild.get_role(leigo_role_id)
 		if role:
 			try:
 				await member.add_roles(role, reason="Novo membro entrou")
@@ -133,8 +139,6 @@ class LogsCog(commands.Cog):
 			except discord.HTTPException as e:
 				print(f"Erro ao adicionar cargo: {e}")
 		
-		regras_mention = f"<#{self.bot.config['canais']['regras']}>"
-
 		channel_id = self.bot.config['canais'].get('geral')
 		channel = self.bot.get_channel(channel_id) if channel_id else None
 
@@ -145,13 +149,14 @@ class LogsCog(commands.Cog):
 					ui.TextDisplay(
 						"## ✨ Bem-vindo(a)!"
 					),
+					ui.Separator(spacing=ui.Separator()),
 					accessory=ui.Thumbnail(member.display_avatar.url)
 				),
 				ui.TextDisplay(
-					f"Seja bem-vindo(a) ao servidor, {member.mention}!\n\nLeia as regras em {regras_mention} e aproveite sua estadia!"
+					f"Seja bem-vindo(a) ao servidor, {member.mention}!\n\nLeia veja algumas instruções em <id:guide> e aproveite sua estadia!"
 				),
 				ui.TextDisplay(
-					f"-# {member.name} • Leigo"
+					f"-# {guild.name} • Leigo"
 				),
 				accent_color=0xffcc00
 			)
@@ -163,14 +168,18 @@ class LogsCog(commands.Cog):
 		await self.publish_if_news(msg=msg)
 		await self.check_boost_message(msg=msg)
 		await self.check_bump_msg(msg=msg)
-		await self.check_invite(msg=msg)
+		
+		if not isinstance(msg.channel, discord.DMChannel):
+			await self.check_invite(msg=msg)
 		
 		if msg.author.bot:
 			return
 		
 		await check_cic_verse(msg=msg)
 		await self.check_bible_verse(msg=msg)
-		await self.check_badword(msg=msg)
+
+		if not isinstance(msg.channel, discord.DMChannel):
+			await self.check_badword(msg=msg)
 
 	async def publish_if_news(self, msg: discord.Message):
 		if msg.channel.type != discord.ChannelType.news:
@@ -322,9 +331,8 @@ class LogsCog(commands.Cog):
 			versiculo = versiculo_inicial if versiculo_inicial == versiculo_final else f"{versiculo_inicial}-{versiculo_final}"
 
 			tipo = res['tipo']
-			separador = ":" if tipo == "Evangelhos" else ","
 
-			passagem = f"{res['capítulo']}{separador}{versiculo}"
+			passagem = f"{res['capítulo']},{versiculo}"
 
 			view = ui.LayoutView()
 			container = ui.Container(
@@ -421,6 +429,20 @@ class LogsCog(commands.Cog):
 			msg_before=msg,
 			author=autor,
 			motivo=motivo,
+		)
+
+	@commands.Cog.listener()
+	async def on_bulk_message_delete(messages: list[discord.Message]):
+		channel = messages[0].channel
+		transcript = await chat_exporter.raw_export(channel=channel, messages=messages)
+		
+		soup = BeautifulSoup(transcript, "html.parser")
+		_personalize_transcript(soup, channel, len(messages))
+		transcript_html = str(soup)
+
+		discord.File(
+			io.BytesIO(transcript_html.encode()),
+			filename=f"bulk-{messages[0].id}.html",
 		)
 
 	@commands.Cog.listener()
@@ -632,7 +654,7 @@ async def setup(bot: Bot):
 	await bot.add_cog(LogsCog(bot))
 	bot.add_view(GetBumpRole(bot.get_guild(1429152785252876328)))
 
-	@bot.tree.context_menu(name="Recarregar Boost")
+	@app_commands.context_menu(name="Recarregar Boost")
 	async def recarregar_boost(interaction: discord.Interaction, msg: discord.Message):
 		cog: LogsCog = bot.get_cog("LogsCog")
 		if cog:
@@ -640,3 +662,5 @@ async def setup(bot: Bot):
 			await interaction.response.send_message("Boost recarregado.", ephemeral=True)
 		else:
 			await interaction.response.send_message("Cog não encontrado.", ephemeral=True)
+	
+	bot.tree.add_command(recarregar_boost)

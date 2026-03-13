@@ -1,16 +1,4 @@
 {
-	"Boas vindas": {
-		"title": "Seja muito bem-vindo ao Sacra Communitas!",
-		"description": "Olá, fiel!\n\nEsta comunidade foi criada para acolher e guiar os seguidores do Catolicismo, proporcionando um espaço seguro e temático baseado na fé e nos ensinamentos da Santa Igreja Católica.\n\n**Canais importantes para começar:**\n- <#1429160711912685588> **Regras do servidor** - Leia com atenção para entender o que é permitido e proibido.\n- <#1429517914494603274> **Liturgia diária** - Atualizada todos os dias às 6:00 (horário de Brasília) para acompanhar a vida litúrgica.\n- <#1430629620499222759> **Código Canônico** - Código contendo as principais informações sobre o funcionamento prático do servidor.\n\nSinta-se à vontade para explorar, interagir com a comunidade e crescer na fé!",
-		"color": 16763904,
-		"thumbnail": {
-			"url": "https://images-ext-1.discordapp.net/external/oTsQg9QtLOXYH8ECGGkvMx685dCiMu1pEVvOCunF_wk/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1429152785252876328/b614333038604a5e7d409db604568a31.png?format=webp&quality=lossless&width=930&height=930"
-		},
-		"footer": {
-			"text": "Sacra Communitas - Comunidade Católica Online",
-			"icon_url": "https://images-ext-1.discordapp.net/external/oTsQg9QtLOXYH8ECGGkvMx685dCiMu1pEVvOCunF_wk/%3Fsize%3D2048/https/cdn.discordapp.com/icons/1429152785252876328/b614333038604a5e7d409db604568a31.png?format=webp&quality=lossless&width=930&height=930"
-		}
-	},
 	"Convite": {
 		"flags": 32768,
 		"components": [

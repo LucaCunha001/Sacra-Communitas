@@ -38,9 +38,8 @@ class BibliaCog(commands.Cog):
 			versiculo = versiculo_inicial if versiculo_inicial == versiculo_final else f"{versiculo_inicial}-{versiculo_final}"
 
 			tipo = res['tipo']
-			separador = ":" if tipo == "Evangelhos" else ","
 
-			passagem = f"{res['capítulo']}{separador}{versiculo}"
+			passagem = f"{res['capítulo']},{versiculo}"
 
 			embed = discord.Embed(
 				title=f"{res['livro']} {passagem} ({tipo})",

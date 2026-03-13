@@ -5,10 +5,12 @@ import io
 
 from bs4 import BeautifulSoup
 from discord import app_commands
+
 from utils.data import get_config
-from utils.recursos import Bot
+from utils.recursos import Bot, _personalize_transcript
 from utils.permissoes import verificar_permissao
 from utils.embed import criar_embed
+
 from typing import Union
 
 guild_ids = [get_config()["config"]["servidores"]["main"]]
@@ -346,94 +348,8 @@ class TicketView(discord.ui.View):
 			bot=self.bot,
 		)
 		soup = BeautifulSoup(transcript, "html.parser")
-		self._personalize_transcript(soup, channel, mensagens)
+		_personalize_transcript(soup, channel, mensagens)
 		return str(soup)
-
-	def _personalize_transcript(
-		self, soup: BeautifulSoup, channel: discord.TextChannel, mensagens: int
-	):
-		hoje = datetime.datetime.now()
-		meses = [
-			"janeiro",
-			"fevereiro",
-			"março",
-			"abril",
-			"maio",
-			"junho",
-			"julho",
-			"agosto",
-			"setembro",
-			"outubro",
-			"novembro",
-			"dezembro",
-		]
-		data_formatada = f"{hoje.day} de {meses[hoje.month - 1].title()} de {hoje.year} às {hoje.hour:02d}:{hoje.minute:02d}:{hoje.second:02d}"
-		titulo = f"Transcript do Ticket: {channel.name} - {channel.id}"
-
-		for title in soup.find_all("title"):
-			title.string = titulo
-
-		for meta in soup.find_all("meta"):
-			if meta.get("property") in ["og:title", "twitter:title"] or meta.get(
-				"name"
-			) in ["title", "og:title", "twitter:title"]:
-				meta["content"] = titulo
-			if meta.get("name") in [
-				"description",
-				"og:description",
-				"twitter:description",
-			] or meta.get("property") in [
-				"description",
-				"og:description",
-				"twitter:description",
-			]:
-				meta["content"] = (
-					f"Transcript do Ticket: {channel.name} - {channel.id}. Com {mensagens} mensagens. O transcript foi gerado em {data_formatada}"
-				)
-
-		traduzir = {
-			"Summary": "Sumário",
-			"Guild ID": "ID do Servidor",
-			"Channel ID": "ID do Canal",
-			"Channel Creation Date": "Data de Criação do Canal",
-			"Total Message Count": "Quantidade Total de Mensagens",
-			"Total Message Participants": "Total de Participantes nas Mensagens",
-			"Member Since": "Membro Desde",
-			"Member ID": "ID do Membro",
-			"Message Count": "Quantidade de Mensagens",
-		}
-
-		for meta__value in soup.find_all("meta__value"):
-			if meta__value.string and meta__value.string in traduzir:
-				meta__value.string = traduzir[meta__value.string]
-
-		for span in soup.find_all("span"):
-			if span.string and span.string in traduzir:
-				span.string = traduzir[span.string]
-			if span.string:
-				span.string = (
-					span.string.replace("Today at", "Hoje às")
-					.replace("Yesterday at", "Ontem às")
-					.replace("Tomorrow at", "Amanhã às")
-				)
-
-		for span in soup.find_all("span", class_="info__title"):
-			span.string = f"Bem-vindo ao canal #{channel.name}!"
-
-		for span in soup.find_all("span", class_="info__subject"):
-			span.string = (
-				f"Essas são as últimas 200 mensagens do canal #{channel.name}."
-			)
-
-		for span in soup.find_all("span", class_="footer__text"):
-			span.string = f"Esse transcript foi gerado em {data_formatada}"
-		
-		for style_tag in soup.find_all("style"):
-			if style_tag.string:
-				style_tag.string = style_tag.string.replace("#36393f", "#000")
-
-		for tag in soup.find_all(style=True):
-			tag["style"] = tag["style"].replace("#36393f", "#000")
 
 	async def _send_transcripts(
 		self,

@@ -17,7 +17,8 @@ class LiturgiaCog(commands.Cog):
 		super().__init__()
 		self.bot = bot
 		self.session = aiohttp.ClientSession()
-		self.envio_liturgia.start()
+		if not bot.debug:
+			self.envio_liturgia.start()
 	
 	liturgia_gp = app_commands.Group(name="liturgia", description="Comandos relacionados a liturgia diária.")
 

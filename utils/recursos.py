@@ -1,7 +1,9 @@
+import datetime
 import discord
 import os
 import re
 
+from bs4 import BeautifulSoup
 from discord.ext import commands
 from typing import TypedDict
 
@@ -37,6 +39,7 @@ def expand_bible_verse(content: str) -> list[BibleDict]:
 		"Sl": ["Salmos", "Salmo"],
 		"Pr": ["Provérbios", "Provérbio"],
 		"Ct": ["Cânticos", "Cântico", "Cantares"],
+		"Os": ["Oseias"],
 
 		"Mt": ["Mateus", "Matheus"],
 		"Mc": ["Marcos"],
@@ -52,6 +55,8 @@ def expand_bible_verse(content: str) -> list[BibleDict]:
 
 		"1Tm": ["1 Timóteo", "Primeira Timóteo", "1º Timóteo", "1ª Timóteo"],
 		"2Tm": ["2 Timóteo", "Segunda Timóteo", "2º Timóteo", "2ª Timóteo"],
+
+		"Tg": ["Tiago", "Thiago", "São Thiago", "Santiago", "Ti", "Th"],
 
 		"1Pd": ["1 Pedro", "Primeira Pedro", "1º Pedro", "1º Pedro"],
 		"2Pd": ["2 Pedro", "Segunda Pedro", "2º Pedro", "2ª Pedro"],
@@ -99,7 +104,7 @@ def expand_bible_verse(content: str) -> list[BibleDict]:
 			"Baruc": "Br",
 			"Ezequiel": "Ez",
 			"Daniel": "Dn",
-			"Oseias": "Os",
+			"Oséias": "Os",
 			"Joel": "Jl",
 			"Amós": "Am",
 			"Abdias": "Ab",
@@ -268,6 +273,92 @@ def expand_bible_verse(content: str) -> list[BibleDict]:
 
 	return data
 
+def _personalize_transcript(
+		self, soup: BeautifulSoup, channel: discord.TextChannel, mensagens: int
+	):
+		hoje = datetime.datetime.now()
+		meses = [
+			"janeiro",
+			"fevereiro",
+			"março",
+			"abril",
+			"maio",
+			"junho",
+			"julho",
+			"agosto",
+			"setembro",
+			"outubro",
+			"novembro",
+			"dezembro",
+		]
+		data_formatada = f"{hoje.day} de {meses[hoje.month - 1].title()} de {hoje.year} às {hoje.hour:02d}:{hoje.minute:02d}:{hoje.second:02d}"
+		titulo = f"Transcript do Ticket: {channel.name} - {channel.id}"
+
+		for title in soup.find_all("title"):
+			title.string = titulo
+
+		for meta in soup.find_all("meta"):
+			if meta.get("property") in ["og:title", "twitter:title"] or meta.get(
+				"name"
+			) in ["title", "og:title", "twitter:title"]:
+				meta["content"] = titulo
+			if meta.get("name") in [
+				"description",
+				"og:description",
+				"twitter:description",
+			] or meta.get("property") in [
+				"description",
+				"og:description",
+				"twitter:description",
+			]:
+				meta["content"] = (
+					f"Transcript do Ticket: {channel.name} - {channel.id}. Com {mensagens} mensagens. O transcript foi gerado em {data_formatada}"
+				)
+
+		traduzir = {
+			"Summary": "Sumário",
+			"Guild ID": "ID do Servidor",
+			"Channel ID": "ID do Canal",
+			"Channel Creation Date": "Data de Criação do Canal",
+			"Total Message Count": "Quantidade Total de Mensagens",
+			"Total Message Participants": "Total de Participantes nas Mensagens",
+			"Member Since": "Membro Desde",
+			"Member ID": "ID do Membro",
+			"Message Count": "Quantidade de Mensagens",
+		}
+
+		for meta__value in soup.find_all("meta__value"):
+			if meta__value.string and meta__value.string in traduzir:
+				meta__value.string = traduzir[meta__value.string]
+
+		for span in soup.find_all("span"):
+			if span.string and span.string in traduzir:
+				span.string = traduzir[span.string]
+			if span.string:
+				span.string = (
+					span.string.replace("Today at", "Hoje às")
+					.replace("Yesterday at", "Ontem às")
+					.replace("Tomorrow at", "Amanhã às")
+				)
+
+		for span in soup.find_all("span", class_="info__title"):
+			span.string = f"Bem-vindo ao canal #{channel.name}!"
+
+		for span in soup.find_all("span", class_="info__subject"):
+			span.string = (
+				f"Essas são as últimas 200 mensagens do canal #{channel.name}."
+			)
+
+		for span in soup.find_all("span", class_="footer__text"):
+			span.string = f"Esse transcript foi gerado em {data_formatada}"
+		
+		for style_tag in soup.find_all("style"):
+			if style_tag.string:
+				style_tag.string = style_tag.string.replace("#36393f", "#000")
+
+		for tag in soup.find_all(style=True):
+			tag["style"] = tag["style"].replace("#36393f", "#000")
+
 def contar(num: int) -> str:
 	algarismos = [
 		("M", 1000),
@@ -319,6 +410,7 @@ class HelpCommand(commands.HelpCommand):
 class Bot(commands.Bot):
 	def __init__(self):
 		super().__init__(command_prefix=commands.when_mentioned_or("!"), intents=discord.Intents.all(), help_command=HelpCommand(self))
+		self.debug = is_unix()
 	
 	async def on_ready(self):
 		await self.wait_until_ready()
@@ -329,7 +421,7 @@ class Bot(commands.Bot):
 		status = discord.Status.online
 		emoji = discord.PartialEmoji.from_str("<:vaticano:1468962682123325552>")
 
-		if not is_unix():
+		if not self.debug:
 			texto = "Em manutenção."
 			status = discord.Status.idle
 		

@@ -134,6 +134,48 @@ class WebhookCog(commands.Cog):
 			"Mensagem enviada via webhook!", ephemeral=True
 		)
 
+	@webhook_group.command(name="boas_vindas", description="Envia a mensagem de boas-vindas.")
+	async def boas_vindas(self, interaction: discord.Interaction):
+		canais = {
+			"Regras do servidor": {
+				"id": 1429160711912685588,
+				"text": "Leia com atenção para entender o que é permitido e proibido."
+			},
+			"Liturgia Diária": {
+				"id": 1429517914494603274,
+				"text": "Atualizada todos os dias às 6:00 (horário de Brasília) para acompanhar a vida litúrgica."
+			},
+			"Avisos": {
+				"id": 1429791707960180786,
+				"text": "Avisos recentes da comunidade."
+			},
+			"Código Canônico": {
+				"id": 1430629620499222759,
+				"text": "Código contendo as principais informações sobre o funcionamento prático do servidor."
+			}
+		}
+		container = ui.Container(
+			ui.Section(
+				ui.TextDisplay(
+					"## Seja muito bem-vindo à Sacra Communitas!\n"
+					"Olá, fiel!\n\n"
+					"Esta comunidade foi criada para acolher e guiar os seguidores do Catolicismo, proporcionando um espaço seguro e temático baseado na fé e nos ensinamentos da Santa Igreja Católica."
+				),
+				accessory=ui.Thumbnail(interaction.guild.icon.url)
+			),
+			ui.Separator(),
+			ui.TextDisplay(
+				f"**Canais importantes para começar:**\nVerifique se há novas perguntas disponíveis em <id:customize>\n{'\n'.join([f'- <#{data['id']}> - {data['text']}' for data in canais.values()])}"
+			),
+			ui.TextDisplay("Sinta-se à vontade para explorar, interagir com a comunidade e crescer na fé!"),
+			accent_color=0xFFCC00
+		)
+		view = ui.LayoutView()
+		view.add_item(container)
+
+		await interaction.channel.send(view=view)
+		await interaction.response.send_message("Mensagem enviada com sucesso!", ephemeral=True)
+
 	def get_webhook_embeds(self, embed_key: str):
 		return open_embed(embed_key)
 
