@@ -207,6 +207,7 @@ class VaticanNewsCog(commands.Cog):
 
 		try:
 			await webhook.send(view=NewsView(noticia=noticia, ping=ping))
+			return
 			salvar_ultimo_guid(noticia["guid"])
 		except Exception as e:
 			await self.bot.send_to_console(f"[VN] Erro ao enviar webhook: {e}")
