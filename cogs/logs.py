@@ -149,9 +149,9 @@ class LogsCog(commands.Cog):
 					ui.TextDisplay(
 						"## ✨ Bem-vindo(a)!"
 					),
-					ui.Separator(spacing=ui.Separator()),
 					accessory=ui.Thumbnail(member.display_avatar.url)
 				),
+				ui.Separator(),
 				ui.TextDisplay(
 					f"Seja bem-vindo(a) ao servidor, {member.mention}!\n\nLeia veja algumas instruções em <id:guide> e aproveite sua estadia!"
 				),

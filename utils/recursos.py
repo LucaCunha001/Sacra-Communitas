@@ -274,7 +274,7 @@ def expand_bible_verse(content: str) -> list[BibleDict]:
 	return data
 
 def _personalize_transcript(
-		self, soup: BeautifulSoup, channel: discord.TextChannel, mensagens: int
+		soup: BeautifulSoup, channel: discord.TextChannel, mensagens: int
 	):
 		hoje = datetime.datetime.now()
 		meses = [
