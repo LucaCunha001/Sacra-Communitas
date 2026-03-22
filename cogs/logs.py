@@ -235,7 +235,7 @@ class LogsCog(commands.Cog):
 				ui.TextDisplay(f"{msg.author.mention} enviou um convite para **{guild.name}**."),
 				ui.TextDisplay(f"Convite usado: `{convite.url}`"),
 				ui.TextDisplay("### Informações do servidor:"),
-				ui.TextDisplay(f"**Descrição:**\n>{guild.description or 'Nenhuma'}"),
+				ui.TextDisplay(f"**Descrição:**\n> {guild.description or 'Nenhuma'}"),
 			)
 
 			layoutview.add_item(container)
