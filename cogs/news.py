@@ -29,48 +29,47 @@ class NewsConfig(TypedDict, total=False):
 
 
 def get_news_config_db(guild_id: int) -> NewsConfig:
-	try:
-		conn = get_connection()
-		cursor = conn.cursor(dictionary=True)
-		cursor.execute("SELECT * FROM vatican_news_config WHERE guild_id = %s", (guild_id))
-		row = cursor.fetchone()
-		if not row:
-			return {}
-		return {
-			"ping": row["ping"],
-			"webhook_url": row["webhook_url"],
-			"canal": row["canal"],
-			"ultimo_guid": row["ultimo_guid"],
-		}
-	finally:
-		cursor.close()
-		conn.close()
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM vatican_news_config WHERE guild_id = %s", (guild_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {}
+        return {
+            "ping": row["ping"],
+            "webhook_url": row["webhook_url"],
+            "canal": row["canal"],
+            "ultimo_guid": row["ultimo_guid"]
+        }
+    finally:
+        cursor.close()
+        conn.close()
 
 
-def save_news_config(guild_id: int, config: NewsConfig):
-	try:
-		conn = get_connection()
-		cursor = conn.cursor(dictionary=True)
-		cursor.execute("""
-			INSERT INTO vatican_news_config (guild_id, ping, webhook_url, canal, ultimo_guid)
-			VALUES (%s, %s, %s, %s, %s)
-			ON DUPLICATE KEY UPDATE
-				ping = VALUES(ping)
-				webhook_url = VALUES(webhook_url)
-				canal = VALUES(canal)
-				ultimo_guid = VALUES(ultimo_guid)
-		""", (
-			guild_id,
-			config.get("ping"),
-			config.get("webhook_url"),
-			config.get("canal"),
-			config.get("ultimo_guid")
-		))
-		conn.commit()
-	finally:
-		cursor.close()
-		conn.close()
-
+def save_news_config_db(guild_id: int, config: NewsConfig):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO vatican_news_config (guild_id, ping, webhook_url, canal, ultimo_guid)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                ping = VALUES(ping),
+                webhook_url = VALUES(webhook_url),
+                canal = VALUES(canal),
+                ultimo_guid = VALUES(ultimo_guid)
+        """, (
+            guild_id,
+            config.get("ping"),
+            config.get("webhook_url"),
+            config.get("canal"),
+            config.get("ultimo_guid")
+        ))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
 def carregar_ultimo_guid(guild_id: int) -> str | None:
 	return get_news_config_db(guild_id).get("ultimo_guid")
@@ -79,7 +78,7 @@ def carregar_ultimo_guid(guild_id: int) -> str | None:
 def salvar_ultimo_guid(guild_id: int, guid: str):
 	config = get_news_config_db(guild_id)
 	config["ultimo_guid"] = guid
-	save_news_config(guild_id, config)
+	save_news_config_db(guild_id, config)
 
 
 class HTMLToDiscord(HTMLParser):
@@ -313,7 +312,7 @@ class SetNewsConfig(ui.LayoutView):
 
 		config = get_news_config_db(interaction.guild.id)
 		config["ping"] = role.id
-		save_news_config(config)
+		save_news_config_db(config)
 
 		await self._finish(
 			interaction, f"Cargo configurado com sucesso: {role.mention}."
@@ -340,7 +339,7 @@ class SetNewsConfig(ui.LayoutView):
 			config = get_news_config_db(interaction.guild.id)
 			config["webhook_url"] = webhooks[0].url
 			config["canal"] = channel.id
-			save_news_config(config)
+			save_news_config_db(config)
 
 			return await self._finish(
 				interaction, f"Webhook configurado com sucesso em {channel.mention}."
@@ -383,7 +382,7 @@ class SetNewsConfig(ui.LayoutView):
 			config = get_news_config_db(interaction_select.guild.id)
 			config["webhook_url"] = webhook.url
 			config["canal"] = channel
-			save_news_config(config)
+			save_news_config_db(config)
 
 			await self._finish(
 				interaction_select,
