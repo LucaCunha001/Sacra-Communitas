@@ -1,7 +1,6 @@
 import aiohttp
 import discord
 import xml.etree.ElementTree as ET
-import json
 import datetime
 
 from email.utils import parsedate_to_datetime
@@ -12,10 +11,10 @@ from discord import app_commands, ui
 from html import unescape
 from html.parser import HTMLParser
 
-from typing import TypedDict, Literal, Optional
+from typing import TypedDict, Literal
 
 from utils.recursos import Bot
-from utils.data import DataFiles
+from utils.data import get_connection
 from utils.console import is_unix
 
 RSS_FEED_URL = "https://www.vaticannews.va/pt.rss.xml"
@@ -29,35 +28,58 @@ class NewsConfig(TypedDict, total=False):
 	canal: int
 
 
-def carregar_json(path: str, default: dict) -> dict:
+def get_news_config_db(guild_id: int) -> NewsConfig:
 	try:
-		with open(path, "r", encoding="utf-8") as f:
-			return json.load(f)
-	except (FileNotFoundError, json.JSONDecodeError):
-		return default
+		conn = get_connection()
+		cursor = conn.cursor(dictionary=True)
+		cursor.execute("SELECT * FROM vatican_news_config WHERE guild_id = %s", (guild_id))
+		row = cursor.fetchone()
+		if not row:
+			return {}
+		return {
+			"ping": row["ping"],
+			"webhook_url": row["webhook_url"],
+			"canal": row["canal"],
+			"ultimo_guid": row["ultimo_guid"],
+		}
+	finally:
+		cursor.close()
+		conn.close()
 
 
-def salvar_json(path: str, data: dict):
-	with open(path, "w", encoding="utf-8") as f:
-		json.dump(data, f, ensure_ascii=False, indent=4)
+def save_news_config(guild_id: int, config: NewsConfig):
+	try:
+		conn = get_connection()
+		cursor = conn.cursor(dictionary=True)
+		cursor.execute("""
+			INSERT INTO vatican_news_config (guild_id, ping, webhook_url, canal, ultimo_guid)
+			VALUES (%s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE
+				ping = VALUES(ping)
+				webhook_url = VALUES(webhook_url)
+				canal = VALUES(canal)
+				ultimo_guid = VALUES(ultimo_guid)
+		""", (
+			guild_id,
+			config.get("ping"),
+			config.get("webhook_url"),
+			config.get("canal"),
+			config.get("ultimo_guid")
+		))
+		conn.commit()
+	finally:
+		cursor.close()
+		conn.close()
 
 
-def get_news_config() -> NewsConfig:
-	return carregar_json(DataFiles.NEWS_VA.value, {})
+def carregar_ultimo_guid(guild_id: int) -> str | None:
+	return get_news_config_db(guild_id).get("ultimo_guid")
 
 
-def save_news_config(config: NewsConfig):
-	salvar_json(DataFiles.NEWS_VA.value, config)
-
-
-def carregar_ultimo_guid() -> Optional[str]:
-	return get_news_config().get("ultimo_guid")
-
-
-def salvar_ultimo_guid(guid: str):
-	config = get_news_config()
+def salvar_ultimo_guid(guild_id: int, guid: str):
+	config = get_news_config_db(guild_id)
 	config["ultimo_guid"] = guid
-	save_news_config(config)
+	save_news_config(guild_id, config)
 
 
 class HTMLToDiscord(HTMLParser):
@@ -82,7 +104,7 @@ class HTMLToDiscord(HTMLParser):
 		return unescape("".join(self.parts)).strip()
 
 
-async def buscar_ultima_noticia(session: aiohttp.ClientSession) -> Optional[dict]:
+async def buscar_ultima_noticia(session: aiohttp.ClientSession) -> dict | None:
 	try:
 		async with session.get(RSS_FEED_URL, timeout=10) as res:
 			if res.status != 200:
@@ -189,7 +211,8 @@ class VaticanNewsCog(commands.Cog):
 
 	@tasks.loop(minutes=1)
 	async def check_news(self):
-		config = get_news_config()
+		SERVER_ID = 1429152785252876328
+		config = get_news_config_db(SERVER_ID)
 		webhook_url = config.get("webhook_url")
 		if not webhook_url:
 			return
@@ -201,14 +224,13 @@ class VaticanNewsCog(commands.Cog):
 		if not noticia:
 			return
 
-		ultimo_guid = carregar_ultimo_guid()
+		ultimo_guid = carregar_ultimo_guid(SERVER_ID)
 		if noticia["guid"] == ultimo_guid:
 			return
 
 		try:
 			await webhook.send(view=NewsView(noticia=noticia, ping=ping))
-			return
-			salvar_ultimo_guid(noticia["guid"])
+			salvar_ultimo_guid(SERVER_ID, noticia["guid"])
 		except Exception as e:
 			await self.bot.send_to_console(f"[VN] Erro ao enviar webhook: {e}")
 
@@ -223,7 +245,7 @@ class VaticanNewsCog(commands.Cog):
 
 	@news_gp.command(name="vnstatus", description="Verificar o último GUID salvo.")
 	async def status(self, interaction: discord.Interaction):
-		ultimo = carregar_ultimo_guid() or "Nenhum ainda"
+		ultimo = carregar_ultimo_guid(interaction.guild.id) or "Nenhum ainda"
 		await interaction.response.send_message(
 			f"Último GUID salvo: `{ultimo}`", ephemeral=True
 		)
@@ -289,7 +311,7 @@ class SetNewsConfig(ui.LayoutView):
 	async def _on_ping_selected(self, interaction: discord.Interaction):
 		role: discord.Role = self.select.values[0]
 
-		config = get_news_config()
+		config = get_news_config_db(interaction.guild.id)
 		config["ping"] = role.id
 		save_news_config(config)
 
@@ -315,7 +337,7 @@ class SetNewsConfig(ui.LayoutView):
 			)
 
 		if len(webhooks) == 1:
-			config = get_news_config()
+			config = get_news_config_db(interaction.guild.id)
 			config["webhook_url"] = webhooks[0].url
 			config["canal"] = channel.id
 			save_news_config(config)
@@ -358,7 +380,7 @@ class SetNewsConfig(ui.LayoutView):
 			webhook_id = int(self.webhook_select.values[0])
 			webhook = discord.utils.get(webhooks, id=webhook_id)
 
-			config = get_news_config()
+			config = get_news_config_db(interaction_select.guild.id)
 			config["webhook_url"] = webhook.url
 			config["canal"] = channel
 			save_news_config(config)

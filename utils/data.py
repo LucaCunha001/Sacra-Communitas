@@ -1,6 +1,5 @@
 import os
 import json
-import socket
 
 from enum import Enum
 from typing import TypedDict
