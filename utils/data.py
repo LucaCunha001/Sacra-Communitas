@@ -94,10 +94,11 @@ class MembrosJson(TypedDict):
 
 def get_connection():
     return connect(
-        host=socket.gethostname(),
-        user="root",
-        password="VvTrHdZVBfObvzqvLDdRZhjaHiGeOSnF",
-        database="railway"
+        host=os.getenv("MYSQLHOST"),
+        port=int(os.getenv("MYSQLPORT")),
+        user=os.getenv("MYSQLUSER"),
+        password=os.getenv("MYSQLPASSWORD"),
+        database=os.getenv("MYSQL_DATABASE")
     )
 
 def abrir_json(arquivo: str) -> dict | list:
