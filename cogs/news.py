@@ -312,7 +312,7 @@ class SetNewsConfig(ui.LayoutView):
 
 		config = get_news_config_db(interaction.guild.id)
 		config["ping"] = role.id
-		save_news_config_db(config)
+		save_news_config_db(interaction.guild.id, config)
 
 		await self._finish(
 			interaction, f"Cargo configurado com sucesso: {role.mention}."
@@ -339,7 +339,7 @@ class SetNewsConfig(ui.LayoutView):
 			config = get_news_config_db(interaction.guild.id)
 			config["webhook_url"] = webhooks[0].url
 			config["canal"] = channel.id
-			save_news_config_db(config)
+			save_news_config_db(interaction.guild.id, config)
 
 			return await self._finish(
 				interaction, f"Webhook configurado com sucesso em {channel.mention}."
@@ -382,7 +382,7 @@ class SetNewsConfig(ui.LayoutView):
 			config = get_news_config_db(interaction_select.guild.id)
 			config["webhook_url"] = webhook.url
 			config["canal"] = channel
-			save_news_config_db(config)
+			save_news_config_db(interaction_select.guild.id, config)
 
 			await self._finish(
 				interaction_select,
