@@ -190,10 +190,5 @@ if __name__ == "__main__":
 	from dotenv import load_dotenv
 
 	load_dotenv()
-
-	import socket
-
-	host_name = socket.gethostname()
-	print(host_name)
 	TOKEN = os.getenv('TOKEN')
 	bot.run(TOKEN)

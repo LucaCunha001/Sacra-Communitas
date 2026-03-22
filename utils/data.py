@@ -1,5 +1,6 @@
 import os
 import json
+import socket
 
 from enum import Enum
 from typing import TypedDict
@@ -93,7 +94,7 @@ class MembrosJson(TypedDict):
 
 def get_connection():
     return connect(
-        host="SEU_HOST",
+        host=socket.gethostname(),
         user="root",
         password="VvTrHdZVBfObvzqvLDdRZhjaHiGeOSnF",
         database="railway"
