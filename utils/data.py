@@ -4,6 +4,8 @@ import json
 from enum import Enum
 from typing import TypedDict
 
+from mysql.connector import connect
+
 class DataFiles(Enum):
 	CONFIG = 'data/config.json'
 	EMBEDS = 'data/embeds.json'
@@ -89,6 +91,14 @@ class MembrosJson(TypedDict):
 	ja_boostou: bool = False
 	palavroes: int
 
+def get_connection():
+    return connect(
+        host="SEU_HOST",
+        user="root",
+        password="VvTrHdZVBfObvzqvLDdRZhjaHiGeOSnF",
+        database="railway"
+    )
+
 def abrir_json(arquivo: str) -> dict | list:
 	if os.path.isfile(arquivo):
 		with open(arquivo, "r", encoding="utf-8") as f:
@@ -102,20 +112,66 @@ def salvar_json(arquivo: str, conteudo: dict | list):
 		json.dump(conteudo, f, ensure_ascii=False, indent=4)
 
 def get_members() -> dict[str, MembrosJson]:
-	return abrir_json(DataFiles.MEMBROS.value)
+    """Retorna todos os membros como dicionário"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)  # Isso garante que os resultados são dicionários
+        cursor.execute("SELECT * FROM membros")  # Supondo que a tabela seja 'membros'
+        rows = cursor.fetchall()
+        # Convertendo para o mesmo formato que você tinha no JSON
+        membros = {}
+        for row in rows:
+            membros[str(row["member_id"])] = {
+                "warns": json.loads(row.get("warns", "[]")),
+                "ja_boostou": bool(row.get("ja_boostou", 0)),
+                "palavroes": int(row.get("palavroes", 0))
+            }
+        return membros
+    finally:
+        cursor.close()
+        conn.close()
 
 def get_member(member_id: int) -> MembrosJson:
-	arquivo = get_members()
-	membro = arquivo.get(str(member_id), {})
-	membro.setdefault("warns", [])
-	membro.setdefault("ja_boostou", False)
-	membro.setdefault("palavroes", 0)
-	return membro
+    """Retorna apenas um membro"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM membros WHERE member_id = %s", (member_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"warns": [], "ja_boostou": False, "palavroes": 0}
+        return {
+            "warns": json.loads(row.get("warns", "[]")),
+            "ja_boostou": bool(row.get("ja_boostou", 0)),
+            "palavroes": int(row.get("palavroes", 0))
+        }
+    finally:
+        cursor.close()
+        conn.close()
 
 def save_member(member_id: int, obj: MembrosJson):
-	members = get_members()
-	members[str(member_id)] = obj
-	salvar_json(DataFiles.MEMBROS.value, members)
+    """Salva ou atualiza um membro"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        # Convertemos lista de warns para string JSON
+        warns_json = json.dumps(obj.get("warns", []))
+        ja_boostou = int(obj.get("ja_boostou", False))
+        palavroes = int(obj.get("palavroes", 0))
+        
+        # Se o membro já existe, atualiza; senão, insere
+        cursor.execute("""
+            INSERT INTO membros (member_id, warns, ja_boostou, palavroes)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                warns = VALUES(warns),
+                ja_boostou = VALUES(ja_boostou),
+                palavroes = VALUES(palavroes)
+        """, (member_id, warns_json, ja_boostou, palavroes))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
 def get_embeds() -> dict[str, EmbedData | list[EmbedData]]:
 	return abrir_json(DataFiles.EMBEDS.value)

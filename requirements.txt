@@ -4,3 +4,4 @@ discord.py
 requests
 better-profanity
 python-dotenv
+mysql-connector-python
