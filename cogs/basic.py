@@ -71,6 +71,12 @@ class BasicCog(commands.Cog):
 		
 		romano = contar(numero)
 		await interaction.response.send_message(f"O número {numero} em algarismos romanos é: **{romano}**")
+	
+	@app_commands.command(name="shutdown", description="Desliga o bot.")
+	@permissao(gerenciar_comunidade=True)
+	async def shutdown(self, interaction: discord.Interaction):
+		await interaction.response.send_message("Bot desligado.")
+		await self.bot.close()
 
 async def setup(bot: Bot):
 	await bot.add_cog(BasicCog(bot))

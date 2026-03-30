@@ -432,7 +432,7 @@ class Bot(commands.Bot):
 		view.add_item(
 			discord.ui.Container(
 				discord.ui.Section(
-					discord.ui.TextDisplay("Bot iniciado com sucesso!"),
+					discord.ui.TextDisplay("## Bot iniciado com sucesso!"),
 					accessory=discord.ui.Thumbnail(self.user.display_avatar.url)
 				)
 			)
