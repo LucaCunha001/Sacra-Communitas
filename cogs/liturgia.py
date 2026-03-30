@@ -262,7 +262,7 @@ class LiturgiaCog(commands.Cog):
 		else:
 			last = [msg async for msg in canal.history(limit=1)]
 			last = last[0] if last else None
-			if last and last.created_at.date() == agora.date() and last.webhook_id:
+			if last and last.created_at.date() == agora.date() and last.webhook_id is not None:
 				return
 		
 		webhook_url = self.bot.config.get("urls", {}).get("webhooks", {}).get("Liturgia Diária")
@@ -383,7 +383,7 @@ class LiturgiaCog(commands.Cog):
 					c.add_item(ui.TextDisplay(parte))
 
 			views.append(ui.LayoutView().add_item(c))
-			
+
 		return views
 
 	async def get_liturgy(self, url: str) -> dict:

@@ -440,10 +440,23 @@ class LogsCog(commands.Cog):
 		_personalize_transcript(soup, channel, len(messages))
 		transcript_html = str(soup)
 
-		discord.File(
+		file = discord.File(
 			io.BytesIO(transcript_html.encode()),
 			filename=f"bulk-{messages[0].id}.html",
 		)
+
+		canal_id = self.bot.config["logs"]["msgs_apagadas"]
+		canal_log = self.bot.get_channel(canal_id)
+		if canal_log is None:
+			return
+		
+		embed = discord.Embed(
+			title="Múltiplas mensagens deletadas",
+			description=f"Múltiplas mensagens foram apagadas no canal {channel.mention}",
+			colour=discord.Color.blurple()
+		)
+		
+		await canal_log.send(embed=embed, file=file)
 
 	@commands.Cog.listener()
 	async def on_member_remove(self, membro: discord.Member):

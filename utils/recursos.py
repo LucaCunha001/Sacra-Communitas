@@ -9,6 +9,7 @@ from typing import TypedDict
 
 from .console import is_unix
 from .data import Config, get_config, carregar_biblia
+from .errors import setup_error_manager
 
 class BibleDict(TypedDict):
 	testamento: str
@@ -415,6 +416,7 @@ class Bot(commands.Bot):
 	async def on_ready(self):
 		await self.wait_until_ready()
 		await self.load_cogs()
+		setup_error_manager(self)
 		print(f'Entramos como {self.user}')
 
 		texto = "Roma Locuta, Causa Finita."
