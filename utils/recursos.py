@@ -427,6 +427,17 @@ class Bot(commands.Bot):
 		
 		activity = discord.CustomActivity(name=texto, emoji=emoji)
 		await self.change_presence(status=status, activity=activity)
+
+		view = discord.ui.LayoutView()
+		view.add_item(
+			discord.ui.Container(
+				discord.ui.Section(
+					discord.ui.TextDisplay("Bot iniciado com sucesso!"),
+					accessory=discord.ui.Thumbnail(self.user.display_avatar.url)
+				)
+			)
+		)
+		await self.send_to_console(view=view)
 	
 	async def load_cogs(self):
 		for extension in os.listdir("cogs"):

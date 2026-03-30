@@ -1,8 +1,13 @@
+import asyncio
 import discord
 import os
+import sys
 import traceback
 
 from discord import app_commands, ui
+from discord.ext import commands
+
+from typing import Awaitable, Optional, Callable
 
 from utils.console import (
 	command,
@@ -106,7 +111,7 @@ def chunk_text(text: str, size: int = 900):
 	for i in range(0, len(text), size):
 		yield text[i:i + size]
 
-def build_log_view(
+def build_generic_log_view(
 	interaction: discord.Interaction,
 	error: Exception
 ) -> ui.LayoutView:
@@ -157,30 +162,93 @@ def build_log_view(
 	return view
 
 @bot.tree.error
-async def on_app_command_error(
-	interaction: discord.Interaction,
-	error: app_commands.AppCommandError
+async def on_app_command_error(interaction: discord.Interaction, error):
+    async def responder(msg):
+        embed = discord.Embed(
+            title="Erro",
+            description=msg,
+            color=0xFF0000
+        )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    await handle_error(
+        origin="slash",
+        user=interaction.user,
+        guild=interaction.guild,
+        command_name=get_command_name(interaction),
+        send_user_feedback=responder,
+        error=error
+    )
+
+@bot.event
+async def on_command_error(ctx: commands.Context, error: Exception):
+    async def responder(msg):
+        await ctx.send(msg)
+
+    await handle_error(
+        origin="prefix",
+        user=ctx.author,
+        guild=ctx.guild,
+        command_name=ctx.command.qualified_name if ctx.command else "desconhecido",
+        send_user_feedback=responder,
+        error=error
+    )
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    error = sys.exc_info()[1]
+
+    await handle_error(
+        origin=event,
+        user=None,
+        guild=None,
+        command_name="evento",
+        send_user_feedback=lambda msg: asyncio.sleep(0),
+        error=error
+    )
+
+def build_generic_user_error(command: str, error: Exception) -> str:
+    if isinstance(error, FaltaPermissaoSacerdotal):
+        return f"{error.role.name} não pode usar `{command}`."
+
+    if isinstance(error, discord.Forbidden):
+        return "Eu não tenho permissão pra fazer isso."
+
+    if isinstance(error, commands.MissingPermissions):
+        return "Você não tem permissão pra isso."
+
+    return f"Ocorreu um erro ao executar `{command}`."
+
+async def handle_error(
+    *,
+    origin: str,
+    user: Optional[discord.abc.User],
+    guild: Optional[discord.Guild],
+    command_name: str,
+    send_user_feedback: Callable[[str], Awaitable[None]],
+    error: Exception
 ):
-	error = unwrap_app_command_error(error)
+    error = unwrap_app_command_error(error)
 
-	traceback.print_exception(
-		type(error),
-		error,
-		error.__traceback__
-	)
+    traceback.print_exception(type(error), error, error.__traceback__)
 
-	user_embed = discord.Embed(
-		title="Erro ao executar comando",
-		description=user_error_message(interaction, error),
-		color=0xFF0000
-	)
+    msg = build_generic_user_error(command_name, error)
 
-	if interaction.response.is_done():
-		await interaction.followup.send(embed=user_embed, ephemeral=True)
-	else:
-		await interaction.response.send_message(embed=user_embed, ephemeral=True)
+    await send_user_feedback(msg)
 
-	await bot.send_to_console(view=build_log_view(interaction, error))
+    await bot.send_to_console(
+        view=build_generic_log_view(
+            origin=origin,
+            user=user,
+            guild=guild,
+            command=command_name,
+            error=error
+        )
+    )
 
 if __name__ == "__main__":
 	upgrade_pip()

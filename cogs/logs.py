@@ -432,7 +432,7 @@ class LogsCog(commands.Cog):
 		)
 
 	@commands.Cog.listener()
-	async def on_bulk_message_delete(messages: list[discord.Message]):
+	async def on_bulk_message_delete(self, messages: list[discord.Message]):
 		channel = messages[0].channel
 		transcript = await chat_exporter.raw_export(channel=channel, messages=messages)
 		
@@ -519,7 +519,6 @@ class LogsCog(commands.Cog):
 			return
 
 		await log_punicao(servidor, TipoPunicao.ComunhaoRestaurada, user, autor, motivo)
-
 
 	async def verificar_timeout(self, before: discord.Member, after: discord.Member):
 		autor = None
