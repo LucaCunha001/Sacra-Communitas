@@ -271,7 +271,7 @@ class LiturgiaCog(commands.Cog):
 			return
 
 		try:
-			view = await self.generate_liturgy_view(
+			views = await self.generate_liturgy_view(
 				url=self.bot.config["urls"]["requests"]["liturgia"],
 				content=f"<@&{config['ping']}>"
 			)
@@ -280,7 +280,8 @@ class LiturgiaCog(commands.Cog):
 			allowed_mentions = discord.AllowedMentions()
 			allowed_mentions.all()
 
-			await webhook.send(view=view, allowed_mentions=allowed_mentions)
+			for view in views:
+				await webhook.send(view=view, allowed_mentions=allowed_mentions)
 		except Exception as e:
 			print(f"Erro ao enviar liturgia: {e}")
 
@@ -288,7 +289,7 @@ class LiturgiaCog(commands.Cog):
 	async def before_envio(self):
 		await self.bot.wait_until_ready()
 
-	async def generate_liturgy_view(self, url: str, content: str) -> ui.LayoutView:
+	async def generate_liturgy_view(self, url: str, content: str) -> list[ui.LayoutView]:
 		liturgia = await self.get_liturgy(url)
 		containers: list[ui.Container] = []
 
@@ -374,15 +375,16 @@ class LiturgiaCog(commands.Cog):
 
 			containers.extend(create_containers(titulo_base, texto_final))
 
-		view = ui.LayoutView()
+		views: list[ui.LayoutView] = []
 
 		for i, c in enumerate(containers, start=1):
 			if i == len(containers) and content:
 				for parte in split_text(content):
 					c.add_item(ui.TextDisplay(parte))
 
-			view.add_item(c)
-		return view
+			views.append(ui.LayoutView().add_item(c))
+			
+		return views
 
 	async def get_liturgy(self, url: str) -> dict:
 		async with aiohttp.ClientSession() as session:

@@ -469,11 +469,11 @@ class LogsCog(commands.Cog):
 
 			except Exception as e:
 				print(f"Erro ao verificar audit_logs: {e}")
-
-			if entry.user.id == self.bot.user.id:
-				return
 			
 			if autor is None:
+				return
+			
+			if autor == self.bot.user:
 				return
 			
 			await log_punicao(membro.guild, TipoPunicao.Suspensao, membro, autor, motivo)
