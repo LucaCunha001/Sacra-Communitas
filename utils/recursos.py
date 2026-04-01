@@ -423,7 +423,7 @@ class Bot(commands.Bot):
 		status = discord.Status.online
 		emoji = discord.PartialEmoji.from_str("<:vaticano:1468962682123325552>")
 
-		if not self.debug:
+		if self.debug:
 			texto = "Em manutenção."
 			status = discord.Status.idle
 		
