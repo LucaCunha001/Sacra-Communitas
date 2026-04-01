@@ -411,7 +411,7 @@ class HelpCommand(commands.HelpCommand):
 class Bot(commands.Bot):
 	def __init__(self):
 		super().__init__(command_prefix=commands.when_mentioned_or("!"), intents=discord.Intents.all(), help_command=HelpCommand(self))
-		self.debug = is_unix()
+		self.debug = not is_unix()
 	
 	async def on_ready(self):
 		await self.wait_until_ready()
