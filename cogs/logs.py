@@ -214,6 +214,8 @@ class LogsCog(commands.Cog):
 
 		layoutview = ui.LayoutView()
 
+		ao_menos_um = False
+
 		for m in matches:
 			convite_id = m.group(1)
 
@@ -226,6 +228,8 @@ class LogsCog(commands.Cog):
 
 			if guild.id == msg.guild.id:
 				continue
+
+			ao_menos_um = True
 
 			container = ui.Container(
 				ui.Section(
@@ -240,6 +244,9 @@ class LogsCog(commands.Cog):
 
 			layoutview.add_item(container)
 
+		if not ao_menos_um:
+			return
+		
 		await msg.author.timeout(datetime.timedelta(hours=1))
 		await msg.reply("Não é permitido a divulgação de servidores.")
 		await msg.delete()
