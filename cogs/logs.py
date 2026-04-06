@@ -258,9 +258,6 @@ class LogsCog(commands.Cog):
 	async def check_badword(self, msg: discord.Message):
 		if not msg.guild:
 			return
-
-		if not msg.channel.permissions_for(msg.guild.default_role).send_messages:
-			return
 		
 		with open(DataFiles.PALAVROES.value, encoding="utf-8") as f:
 			PALAVROES = {linha.strip() for linha in f if linha.strip()}
