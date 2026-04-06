@@ -211,66 +211,147 @@ class InscricoesView(ui.LayoutView):
 		super().__init__(timeout=None)
 		self.bot = bot
 
-		c_novico = ui.Container(
+		c_main = ui.Container(
 			ui.Section(
-				ui.TextDisplay("## Torne-se um sacerdote da Sacra Communitas!"),
-				accessory=ui.Thumbnail("https://cdn-icons-png.flaticon.com/512/443/443603.png")
-			),
-			accent_color=0x98FFC3
-		)
-		c_novico.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
-		c_novico.add_item(ui.TextDisplay(
-			"Gostaria de servir nossa comunidade em um papel mais profundo e significativo? "
-			"Estamos aceitando solicitações para novos sacerdotes que desejam se juntar ao nosso clero dedicado.\n\n"
-			"Como sacerdote, você terá a oportunidade de ajudar a cuidar do servidor e de seus membros, "
-			"promovendo um ambiente mais acolhedor e seguro para todos da comunidade.\n\n"
-			"Ao fazer a sua solicitação, você se compromete a manter uma conduta exemplar, "
-			"respeitando as diretrizes e valores da comunidade.\n\n"
-			"Ao enviar sua solicitação, ganhará automaticamente o cargo de Noviço, iniciando sua jornada rumo ao sacerdócio.Depois, basta aguardar a análise dos bispos do servidor.\n\n"
-			"Clique no botão abaixo para enviar sua solicitação e dar o primeiro passo em direção a essa nobre vocação!"
-		))
-
-		novico_btn = ui.Button(label="Enviar Solicitação", style=discord.ButtonStyle.primary, custom_id="enviar_solicitacao_sacerdocio", emoji="🕊️")
-		novico_btn.callback = self.solicitacao_novico
-
-		c_novico.add_item(ui.ActionRow(novico_btn))
-
-		c_doutrina = ui.Container(
-			ui.Section(
-				ui.TextDisplay("## Participe da equipe doutrinária!"),
+				ui.TextDisplay("## Envie sua solicitação"),
 				accessory=ui.Thumbnail("https://cdn-icons-png.flaticon.com/512/2682/2682065.png")
 			),
-			accent_color=0xB7950B
+			accent_color=0x5DADE2
 		)
-		c_doutrina.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
-		
-		c_doutrina.add_item(ui.TextDisplay(
-			"Você gosta de estudar a fé católica com profundidade e fidelidade à doutrina da Igreja? "
-			"Estamos recebendo solicitações para o cargo de Doutrina, voltado a membros que desejam ajudar na orientação teológica do servidor.\n\n"
-			"Quem ocupa essa função auxilia na explicação de temas doutrinários, esclarecimento de dúvidas e manutenção da fidelidade dos conteúdos compartilhados, "
-			"sempre em comunhão com o Magistério da Igreja.\n\n"
-			"Ao se candidatar, você assume o compromisso de buscar formação contínua, agir com caridade nas correções e evitar debates desnecessariamente acalorados, "
-			"preservando a unidade e o bom clima da comunidade.\n\n"
-			"O cargo não é apenas um título, mas um serviço: exige responsabilidade, prudência e humildade intelectual.\n\n"
-			"Clique no botão abaixo para enviar sua solicitação e passar pela avaliação da equipe responsável pela área doutrinária."
+
+		c_main.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
+
+		c_main.add_item(ui.TextDisplay(
+			"Escolha abaixo o tipo de solicitação que deseja enviar.\n\n"
+			"- Sacerdócio: para membros que desejam servir como clero.\n"
+			"- Secretaria: para quem quer ajudar na organização do servidor.\n"
+			"- Teologia: àqueles que querem contribuir na área teológica.\n\n"
+			"Após selecionar, clique em enviar."
 		))
 
+		self.select_tipo = ui.Select(
+			placeholder="Selecione o tipo de solicitação...",
+			options=[
+				discord.SelectOption(
+					label="Sacerdócio",
+					value="novico",
+					emoji="🕊️",
+					description="Tornar-se sacerdote (noviço)"
+				),
+				discord.SelectOption(
+					label="Secretaria",
+					value="secretaria",
+					emoji="📋",
+					description="Equipe de organização"
+				),
+				discord.SelectOption(
+					label="Teologia",
+					value="teologia",
+					emoji="📖",
+					description="Ensinar a doutrina da Igreja"
+				)
+			],
+			custom_id="select_tipo_solicitacao"
+		)
 
-		doutrina_btn = ui.Button(label="Enviar Solicitação", style=discord.ButtonStyle.primary, custom_id="enviar_solicitacao_doutrina", emoji="📖")
-		doutrina_btn.callback = self.solicitacao_doutrina
+		self.select_tipo.callback = self.selecionar
+		c_main.add_item(ui.ActionRow(self.select_tipo))
 
-		c_doutrina.add_item(ui.ActionRow(doutrina_btn))
-
-		self.add_item(c_novico)
-		self.add_item(c_doutrina)
+		self.add_item(c_main)
 	
-	async def solicitacao_novico(self, interaction: discord.Interaction):
-		await enviar_solicitacao(self.bot, interaction)
-	
-	async def solicitacao_doutrina(self, interaction: discord.Interaction):
-		if not any(r == role.id for role in interaction.user.roles for r in [1429972827209207878, 1429973276041412658]):
-			return await interaction.response.send_message("Precisa ser católico para se inscrever!", ephemeral=True)
-		await create_ticket_channel(self.bot, interaction, f"📜・{interaction.user.name}")
+	async def selecionar(self, interaction: discord.Interaction):
+		tipo = self.select_tipo.values[0]
+
+		view = ui.LayoutView()
+
+		if tipo == "novico":
+			titulo = "Sacerdócio"
+			texto = (
+				"Deseja servir a Sacra Communitas de forma mais profunda e assumir uma missão espiritual dentro da comunidade? "
+				"Estamos recebendo solicitações para o sacerdócio, destinadas a membros que demonstram maturidade, compromisso e zelo pela fé.\n\n"
+				"Como sacerdote, você será chamado a cuidar dos membros, promover um ambiente acolhedor e colaborar ativamente na condução espiritual do servidor. "
+				"Não é apenas um cargo, mas um serviço que exige responsabilidade, exemplo de vida e fidelidade aos valores da comunidade.\n\n"
+				"Ao enviar sua solicitação, você inicia sua caminhada como noviço e passa pela avaliação da equipe responsável. "
+				"Este é o primeiro passo em direção a uma vocação de serviço e dedicação."
+			)
+			label = "Fazer formulário"
+			color = 0xF1C40F
+
+		elif tipo == "secretaria":
+			titulo = "Secretaria"
+			texto = (
+				"Gostaria de ajudar na organização e no funcionamento da Sacra Communitas? "
+				"Estamos recebendo solicitações para a equipe de secretaria, responsável por manter a ordem, auxiliar na gestão e garantir o bom andamento das atividades do servidor.\n\n"
+				"Quem atua na secretaria colabora com registros, suporte à equipe e organização geral, sendo peça fundamental para que tudo funcione de forma clara e eficiente. "
+				"O cargo exige atenção, responsabilidade e boa comunicação.\n\n"
+				"Ao se candidatar, você assume o compromisso de servir com dedicação e discrição, contribuindo diretamente para o crescimento e estabilidade da comunidade."
+			)
+			label = "Abrir ticket"
+			color = 0x5DADE2
+
+		elif tipo == "teologia":
+			titulo = "Teologia"
+			texto = (
+				"Você gosta de estudar a fé católica com profundidade e deseja ajudar outros a compreendê-la melhor? "
+				"Estamos recebendo solicitações para a equipe de teologia, voltada a membros que desejam ensinar e esclarecer a doutrina da Igreja.\n\n"
+				"Quem atua nessa área auxilia na explicação de temas teológicos, responde dúvidas e contribui para que os conteúdos do servidor permaneçam fiéis ao Magistério. "
+				"É um serviço que exige estudo contínuo, clareza ao ensinar e caridade nas correções.\n\n"
+				"Mais do que conhecimento, espera-se prudência e humildade, evitando discussões desnecessárias e promovendo sempre a unidade da comunidade.\n\n"
+				"Ao enviar sua solicitação, você passará pela avaliação da equipe responsável."
+			)
+			label = "Abrir ticket"
+			color = 0x8E44AD
+
+		btn = ui.Button(
+			label=label,
+			style=discord.ButtonStyle.blurple,
+			custom_id=f'btn_{tipo}',
+			emoji='📩'
+		)
+		btn.callback = self.enviar
+
+		container = ui.Container(
+			ui.TextDisplay(f"## Solicitação: {titulo}"),
+			ui.Separator(spacing=discord.SeparatorSpacing.large),
+			ui.TextDisplay(texto),
+			ui.ActionRow(btn),
+			accent_color=color
+		)
+
+		view.add_item(container)
+
+		await interaction.response.send_message(view=view, ephemeral=True)
+		
+	async def enviar(self, interaction: discord.Interaction):
+		if not any(r.id in [1429972827209207878, 1429973276041412658] for r in interaction.user.roles):
+			return await interaction.response.send_message(
+				"Precisa ser católico para se inscrever!",
+				ephemeral=True
+			)
+		
+		tipo = interaction.data["custom_id"].replace("btn_", "")
+
+		if tipo == "novico":
+			await enviar_solicitacao(self.bot, interaction)
+
+		elif tipo == "secretaria":
+			if any(r.id == 1461744600061575366 for r in interaction.user.roles):
+				return await interaction.response.send_message("Você já faz parte da secretaria do servidor.", ephemeral=True)
+			
+			await create_ticket_channel(
+				self.bot,
+				interaction,
+				f"📜・{interaction.user.name}"
+			)
+		elif tipo == "teologia":
+			if any(r.id == 1468027291199078495 for r in interaction.user.roles):
+				return await interaction.response.send_message("Você já faz parte da equipe teológica do servidor.", ephemeral=True)
+			
+			await create_ticket_channel(
+				self.bot,
+				interaction,
+				f"📖・{interaction.user.name}"
+			)
 
 class SacerdocioCog(commands.Cog):
 	def __init__(self, bot: Bot):
