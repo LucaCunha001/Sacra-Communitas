@@ -11,57 +11,22 @@ Fiz esse bot para ajudar na organização do servidor [Sacra Communitas](https:/
 
 Cada código dentro da pasta `utils/` serve para auxiliar os funcionamentos dos cogs ou do código principal.
 
-### utils/recursos.py:
-- Contém as principais classes e funções para o funcionamento geral do bot, sendo requisitadas quase sempre pelo projeto.
-- Classes:
-	```py
-	class BibleDict(TypedDict):
-		"""
-		Serve para tipagem da funcão expand_bible_verse().
-		"""
-		testamento: str
-		livro: str
-		capítulo: int
-		versículo_inicial: int
-		versículo_final: int
-		texto: list[str]
-		tipo: str
-	
-	class HelpCommand(commands.HelpCommand):
-		"""
-		Configura os comandos de ajuda (!help) do bot.
-		"""
-	
-	class Bot(commands.Bot):
-		"""
-		Classe do bot. Aqui há a sincronização dos comandos e envio de mensagens ao console (Canal específico).
-		"""
-	```
-- Funções:
-	```py
-	def expand_bible_verse(content: str) -> list[BibleDict]:
-		"""
-		Extrai as passagens bíblicas de acordo com um texto de referência.
-		Ex:
-			expand_bible_verse("Jo 1:1")
-			>>> [
-			>>>     {
-			>>>         "testamento": "Antigo Testamento",
-			>>>         "livro": "São João",
-			>>>         "capítulo": 1,
-			>>>         "versículo_inicial": 1,
-			>>>         "versículo_final": 1,
-			>>>         "texto": "1. No princípio era o Verbo, e o Verbo estava junto de Deus e o Verbo era Deus.*",
-			>>>         "tipo": "Evangelhos"
-			>>>     }
-			>>> ]
-		"""
-	
-	def contar(num: int) -> str:
-		"""
-		Converte um determinado número inteiro em romano.
-		Ex:
-			contar(1962)
-			>>> MCMLXII
-		"""
-	```
+### catecismo.py:
+- Estrai as informações do Catecismo da Igreja Católica direto do site do Vaticano.
+### console.py:
+- Pequenas funções para ajudar nas atualizações do Python e adaptar comandos de Windows e Linux.
+### data.py:
+- Gerencia o banco de dados do bot e criar as TypedDicts para o Pylance.
+### embed.py (obsoleto):
+- Automatiza alguns recursos de embed.
+### errors.py:
+- Gerencia o log de erros.
+### logs.py:
+- Envia os registros de auditória em canais específicos.
+### permissoes.py:
+- Ajuda a definir permissões além daquelas dadas pelo Discord.
+### recursos.py:
+- Funções e classes auxiliares para:
+  - Extrair versículos bíblicos de citações (Ex: "1Ts 2,15");
+  - Traduzir tickets;
+  - Gerenciar a classe do bot.
