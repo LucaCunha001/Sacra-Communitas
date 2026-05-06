@@ -314,7 +314,14 @@ class LiturgiaCog(commands.Cog):
 
 
 		def get_container_color(cor: str):
-			cores = {"Verde": 0x00FF00, "Branco": 0xFFFFFF, "Vermelho": 0xFF0000, "Azul": 0x0000FF, "Roxo": 0x6A0DAD}
+			cores = {
+				"Verde": 0x00FF00,
+				"Branco": 0xFFFFFF,
+				"Vermelho": 0xFF0000,
+				"Azul": 0x0000FF,
+				"Roxo": 0x6A0DAD,
+				"Rosa": 0xDA70D6
+			}
 			return cores.get(cor, 0xFFCC00)
 
 		def create_containers(title: str, description: str = "") -> list[ui.Container]:
@@ -354,25 +361,34 @@ class LiturgiaCog(commands.Cog):
 
 			return containers
 
-		for key in ["primeiraLeitura", "salmo", "segundaLeitura", "evangelho", "extras"]:
-			leitura = liturgia.get(key)
-			if isinstance(leitura, list) and leitura:
-				leitura = leitura[0]
-			elif not leitura:
+		for leitura in liturgia.get("leituras", []):
+			rotulo = leitura.get("rotulo", "Leitura")
+
+			opcoes = leitura.get("opcoes", [])
+			if not opcoes:
 				continue
 
-			titulo_base = f'{leitura["titulo"]} - {leitura["referencia"]}'
-			
-			versiculos_info = expand_bible_verse(leitura["referencia"].replace(", ", ",").replace(". ", "."))
-			
-			if not versiculos_info:
-				texto_final = leitura["texto"]
-			else:
+			opcao = opcoes[0]
+
+			referencia = opcao.get("referencia", "")
+			titulo = opcao.get("titulo", rotulo)
+			texto = opcao.get("texto", "")
+
+			titulo_base = f"{titulo}"
+			if referencia:
+				titulo_base += f" - {referencia}"
+
+			versiculos_info = expand_bible_verse(
+				referencia.replace(", ", ",").replace(". ", ".")
+			) if referencia else None
+
+			if versiculos_info:
 				todos_versiculos = []
 				for v in versiculos_info:
 					todos_versiculos.extend(v["texto"])
-
 				texto_final = "\n".join(todos_versiculos)
+			else:
+				texto_final = texto
 
 			containers.extend(create_containers(titulo_base, texto_final))
 
@@ -390,14 +406,20 @@ class LiturgiaCog(commands.Cog):
 	async def get_liturgy(self, url: str) -> dict:
 		async with aiohttp.ClientSession() as session:
 			async with session.get(url) as response:
-				data: dict[str, dict] = await response.json()
+				data = await response.json()
+
+		celebracoes = data.get("celebracoes", [])
+		if not celebracoes:
+			return {}
+
+		celebracao = next((c for c in celebracoes if c.get("principal")), celebracoes[0])
 
 		return {
-			"titulo": data.get("liturgia", ""),
-			"cor": data.get("cor", "Amarelo"),
-			"primeiraLeitura": data["leituras"].get("primeiraLeitura", []),
-			"segundaLeitura": data["leituras"].get("segundaLeitura", []),
-			"evangelho": data["leituras"].get("evangelho", [])
+			"titulo": celebracao.get("liturgia", ""),
+			"cor": celebracao.get("cor", "Amarelo"),
+			"leituras": celebracao.get("leituras", []),
+			"oracoes": celebracao.get("oracoes", {}),
+			"antifonas": celebracao.get("antifonas", {})
 		}
 
 async def setup(bot: Bot):

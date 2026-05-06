@@ -94,7 +94,7 @@
 	},
 	"urls": {
 		"requests": {
-			"liturgia": "https://liturgia.up.railway.app/v2/"
+			"liturgia": "https://liturgia.up.railway.app/v3/"
 		}
 	},
 	"liturgia": {
