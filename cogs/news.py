@@ -15,7 +15,6 @@ from typing import TypedDict, Literal
 
 from utils.recursos import Bot
 from utils.data import get_connection
-from utils.console import is_unix
 
 RSS_FEED_URL = "https://www.vaticannews.va/pt.rss.xml"
 VATICAN_NEWS_ICON = "https://yt3.googleusercontent.com/oUqd0UFUR4S99mrjuaWZNacoCKTlsFGwwFKNeDUwBOBAPd2NZt2GhrLKYDKAwTt9pbHrXbhZxw=s160-c-k-c0x00ffffff-no-rj"
@@ -29,47 +28,47 @@ class NewsConfig(TypedDict, total=False):
 
 
 def get_news_config_db(guild_id: int) -> NewsConfig:
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM vatican_news_config WHERE guild_id = %s", (guild_id,))
-        row = cursor.fetchone()
-        if not row:
-            return {}
-        return {
-            "ping": row["ping"],
-            "webhook_url": row["webhook_url"],
-            "canal": row["canal"],
-            "ultimo_guid": row["ultimo_guid"]
-        }
-    finally:
-        cursor.close()
-        conn.close()
+	try:
+		conn = get_connection()
+		cursor = conn.cursor()
+		cursor.execute("SELECT * FROM vatican_news_config WHERE guild_id = ?", (guild_id,))
+		row = cursor.fetchone()
+		if not row:
+			return {}
+		return {
+			"ping": row["ping"],
+			"webhook_url": row["webhook_url"],
+			"canal": row["canal"],
+			"ultimo_guid": row["ultimo_guid"]
+		}
+	finally:
+		cursor.close()
+		conn.close()
 
 
 def save_news_config_db(guild_id: int, config: NewsConfig):
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO vatican_news_config (guild_id, ping, webhook_url, canal, ultimo_guid)
-            VALUES (%s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                ping = VALUES(ping),
-                webhook_url = VALUES(webhook_url),
-                canal = VALUES(canal),
-                ultimo_guid = VALUES(ultimo_guid)
-        """, (
-            guild_id,
-            config.get("ping"),
-            config.get("webhook_url"),
-            config.get("canal"),
-            config.get("ultimo_guid")
-        ))
-        conn.commit()
-    finally:
-        cursor.close()
-        conn.close()
+	try:
+		conn = get_connection()
+		cursor = conn.cursor()
+		cursor.execute("""
+			INSERT INTO vatican_news_config (guild_id, ping, webhook_url, canal, ultimo_guid)
+			VALUES (?, ?, ?, ?, ?)
+			ON CONFLICT(guild_id) DO UPDATE SET
+				ping=excluded.ping,
+				webhook_url=excluded.webhook_url,
+				canal=excluded.canal,
+				ultimo_guid=excluded.ultimo_guid
+		""", (
+			guild_id,
+			config.get("ping"),
+			config.get("webhook_url"),
+			config.get("canal"),
+			config.get("ultimo_guid")
+		))
+		conn.commit()
+	finally:
+		cursor.close()
+		conn.close()
 
 def carregar_ultimo_guid(guild_id: int) -> str | None:
 	return get_news_config_db(guild_id).get("ultimo_guid")
@@ -150,12 +149,14 @@ async def buscar_ultima_noticia(session: aiohttp.ClientSession) -> dict | None:
 
 
 class NewsView(ui.LayoutView):
-	def __init__(self, noticia: dict, ping: str | None = None):
+	def __init__(self, noticia: dict[str, str | datetime.datetime], ping: str | None = None):
 		super().__init__(timeout=None)
+		tipo = noticia["link"].split("/")[4].title()
+
 		container = ui.Container(
 			ui.Section(
 				ui.TextDisplay(
-					content=f'## {noticia["title"]}'
+					content=f'## {noticia["title"].replace("\n", "").strip()} - {tipo}'
 				),
 				accessory=ui.Thumbnail(VATICAN_NEWS_ICON)
 			),
@@ -199,12 +200,12 @@ class NewsView(ui.LayoutView):
 class VaticanNewsCog(commands.Cog):
 	def __init__(self, bot: Bot):
 		self.bot = bot
-		if is_unix():
+		if not bot.debug:
 			self.session = aiohttp.ClientSession()
 			self.check_news.start()
 
 	def cog_unload(self):
-		if is_unix():
+		if not self.bot.debug:
 			self.check_news.cancel()
 			self.bot.loop.create_task(self.session.close())
 

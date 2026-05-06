@@ -65,8 +65,8 @@ class BasicCog(commands.Cog):
 		numero="Número inteiro a ser convertido para algarismos romanos."
 	)
 	async def converter_romano(self, interaction: discord.Interaction, numero: int):
-		if numero <= 0:
-			await interaction.response.send_message("Por favor, insira um número inteiro positivo maior que zero.", ephemeral=True)
+		if numero <= 0 or numero >= 4000:
+			await interaction.response.send_message("Por favor, insira um número inteiro positivo maior que zero e menor que 4000.", ephemeral=True)
 			return
 		
 		romano = contar(numero)

@@ -1,6 +1,7 @@
 import aiohttp
 import datetime
 import discord
+import os
 import re
 
 from discord import app_commands, ui
@@ -265,7 +266,7 @@ class LiturgiaCog(commands.Cog):
 			if last and last.created_at.date() == agora.date() and last.webhook_id is not None:
 				return
 		
-		webhook_url = self.bot.config.get("urls", {}).get("webhooks", {}).get("Liturgia Diária")
+		webhook_url = os.getenv('LITURGIADIARIA')
 		if not webhook_url:
 			await self.bot.send_to_console("Não há webhook registrado para liturgia.")
 			return

@@ -109,7 +109,8 @@ class LogsCog(commands.Cog):
 	async def badwords_count(self, ctx: commands.Context, member: discord.User = None):
 		user = member if member else ctx.author
 		member_data = get_member(user.id)
-		await ctx.reply(f"{user.mention} tem **{member_data['palavroes']}** palavrões registrados.")
+		final = "ões registrados" if len(member_data["palavroes"] > 1) else "ão registrado"
+		await ctx.reply(f"{user.mention} tem **{member_data['palavroes']}** palavr{final}.")
 	
 	@commands.Cog.listener()
 	async def on_thread_create(self, thread: discord.Thread):

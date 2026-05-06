@@ -27,7 +27,7 @@ class AprovarIntencao(discord.ui.View):
 	@discord.ui.button(label="Aprovar", style=discord.ButtonStyle.green, custom_id="aprov")
 	async def aprovar(self, interaction: discord.Interaction, button: discord.Button):
 		config = get_config()
-		await interaction.client.get_channel(config['canais']['intencoes']).send(content=interaction.guild.default_role.mention, embeds=interaction.message.embeds)
+		await interaction.client.get_channel(config['canais']['intencoes']).send(content="@everyone", embeds=interaction.message.embeds)
 		await self.disable_all()
 		await interaction.response.edit_message(view=self, embeds=interaction.message.embeds, content="Intenção aprovada!")
 
@@ -115,10 +115,8 @@ class TicketSelectMenu(discord.ui.Select):
 				ephemeral=True,
 			)
 
-		config = get_config()
-
 		if self.values[0] == str(2):
-			if config["canais"].get("intencoes") is None:
+			if self.bot.config["canais"].get("intencoes") is None:
 				return interaction.response.send_message("Ainda não foi configurado o sistema de intenções. Aguarde um pouco.", ephemeral=True)
 
 			return await interaction.response.send_modal(PedidoModal())
@@ -135,11 +133,7 @@ async def create_ticket_channel(bot: Bot, interaction: discord.Interaction, chan
 	)
 	ticket_channel = await ticket_category.create_text_channel(name=channel_name)
 	await ticket_channel.edit(topic=str(interaction.user.id))
-
 	overwrite = discord.PermissionOverwrite(send_messages=True, view_channel=True)
-
-	cargos_staffs = config["cargos"]["sacerdotes"]
-
 	await ticket_channel.set_permissions(interaction.user, overwrite=overwrite)
 
 	embed_response = discord.Embed(
@@ -159,6 +153,8 @@ async def create_ticket_channel(bot: Bot, interaction: discord.Interaction, chan
 	await interaction.response.send_message(
 		embed=embed_response, ephemeral=True, view=view
 	)
+
+	cargos_staffs = config["cargos"]["sacerdotes"]
 
 	for _, cargos_staff in cargos_staffs.items():
 		role = interaction.guild.get_role(cargos_staff["id"])

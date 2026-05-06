@@ -93,10 +93,6 @@
 		}
 	},
 	"urls": {
-		"webhooks": {
-			"Decálogo": "https://discord.com/api/webhooks/1429433737988538381/Sb76_LW-2wQ_PN4MLcipWtOfUYb-_QoSM0Dxnn2_-lt8rSZ66HKAbl8yXksXwbBL-j21",
-			"Liturgia Diária": "https://discord.com/api/webhooks/1464334708367425660/--klYtmFuBVKI42IwNdxURxxV_G5jg5zBl3S_qDTZ9CNtVfrihYu4qU9_lhtW4G5BwD6"
-		},
 		"requests": {
 			"liturgia": "https://liturgia.up.railway.app/v2/"
 		}

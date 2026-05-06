@@ -8,12 +8,15 @@ from utils.data import get_config, save_config
 
 guild_ids = [get_config()["config"]["servidores"]["main"]]
 
+
 class Calls(commands.Cog):
 	def __init__(self, bot: Bot):
 		self.bot = bot
 		self.separador = "・"
 
-	call_gp = app_commands.Group(name="calls", description="Comandos relacionados as calls do servidor")
+	call_gp = app_commands.Group(
+		name="calls", description="Comandos relacionados as calls do servidor"
+	)
 
 	@call_gp.command(name="registrated", description="Veja as chamadas registradas")
 	@app_commands.default_permissions(manage_channels=True)
@@ -21,7 +24,7 @@ class Calls(commands.Cog):
 		msg = ""
 		for call, call_info in self.bot.config["calls"].items():
 			msg += f"{call} - <#{call_info['id']}>\n"
-		
+
 		await interaction.response.send_message(msg, ephemeral=True)
 
 	@call_gp.command(
@@ -67,33 +70,32 @@ class Calls(commands.Cog):
 			return int(channel_name.rsplit(" ", 1)[-1])
 		except (ValueError, IndexError):
 			return None
-	
+
 	async def _reorganizar_calls(
 		self,
 		categoria: discord.CategoryChannel,
 		call_info: dict,
 	):
 		canais = [
-			c for c in categoria.voice_channels
+			c
+			for c in categoria.voice_channels
 			if c.name.startswith(call_info["nome"]) and c.id != call_info["id"]
 		]
 
-		canais.sort(
-			key=lambda c: self._get_call_index(c.name) or 0
-		)
+		canais.sort(key=lambda c: self._get_call_index(c.name) or 0)
 
 		for i, canal in enumerate(canais, start=1):
-			novo_nome = f"{call_info['nome']} {i+1}"
+			novo_nome = f"{call_info['nome']} {i + 1}"
 			if canal.name != novo_nome:
 				await canal.edit(
-					name=novo_nome,
-					reason="Reorganizando chamadas dinâmicas"
+					name=novo_nome, reason="Reorganizando chamadas dinâmicas"
 				)
 
-	def _get_calls_do_prefixo(self, categoria: discord.CategoryChannel, call_info: dict):
+	def _get_calls_do_prefixo(
+		self, categoria: discord.CategoryChannel, call_info: dict
+	):
 		canais = [
-			c for c in categoria.voice_channels
-			if c.name.startswith(call_info["nome"])
+			c for c in categoria.voice_channels if c.name.startswith(call_info["nome"])
 		]
 		canais.sort(key=lambda c: self._get_call_index(c.name) or 0)
 		return canais
@@ -104,6 +106,25 @@ class Calls(commands.Cog):
 			return " ".join(parte.strip().split(" ")[:-1])
 		except (IndexError, AttributeError):
 			return None
+		
+	def _get_call_channels(self, categoria: discord.CategoryChannel, call_info: dict):
+		canais = [
+			c for c in categoria.voice_channels
+			if c.name.startswith(call_info["nome"])
+		]
+		return sorted(canais, key=lambda c: self._get_call_index(c.name) or 0)
+
+
+	def _has_empty_channel(self, canais: list[discord.VoiceChannel]) -> bool:
+		return any(len(c.members) == 0 for c in canais)
+
+
+	def _get_next_index(self, canais: list[discord.VoiceChannel]) -> int:
+		return len(canais) + 1
+
+
+	def _build_call_name(self, base: str, index: int) -> str:
+		return f"{base} {index}"
 
 	async def reload_call(self, voice: discord.VoiceState):
 		channel = voice.channel
@@ -113,11 +134,11 @@ class Calls(commands.Cog):
 		config = get_config()
 		calls = config.get("calls", {})
 
-		categoria_calls_id = config.get("canais", {}).get("calls_category")
-		if not categoria_calls_id or channel.category_id != categoria_calls_id:
+		categoria_id = config.get("canais", {}).get("calls_category")
+		if not categoria_id or channel.category_id != categoria_id:
 			return
 
-		categoria = channel.guild.get_channel(categoria_calls_id)
+		categoria = channel.guild.get_channel(categoria_id)
 		if not categoria:
 			return
 
@@ -126,45 +147,41 @@ class Calls(commands.Cog):
 			return
 
 		call_info = calls[call_key]
+		canais = self._get_call_channels(categoria, call_info)
 
 		membros = len(channel.members)
+		limite = 3
 
-		if membros == 1:
-			if not channel.name.startswith(call_info["nome"]):
-				return
-
-			existentes = [
-				c
-				for c in categoria.voice_channels
-				if c.name.startswith(call_info["nome"])
-			]
-
-			existe_vazia = any(len(c.members) == 0 for c in existentes)
-
-			if not existe_vazia:
-				indice = len(existentes) + 1
-				new_call_name = f"{call_info['nome']} {indice}"
+		if membros == 1 and channel.name.startswith(call_info["nome"]):
+			if not self._has_empty_channel(canais) or len(canais) <= limite:
+				novo_nome = self._build_call_name(
+					call_info["nome"], self._get_next_index(canais)
+				)
 
 				await categoria.create_voice_channel(
-					name=new_call_name,
-					reason="Criando canal de chamada dinâmica",
+					name=novo_nome,
+					reason="Criando canal dinâmico",
 					position=channel.position,
-					overwrites=channel.overwrites
+					overwrites=channel.overwrites,
 				)
-		
-		if membros == 0:
-			canais = self._get_calls_do_prefixo(categoria, call_info)
 
+		elif membros == 0:
 			canais_com_gente = [c for c in canais if len(c.members) > 0]
 
-			if not canais_com_gente:
-				for c in canais:
-					if c.id != call_info["id"]:
-						await c.delete(reason="Removendo chamadas vazias em cascata")
+			count = len(canais)
+
+			if count <= limite:
 				return
 
-			if channel.id != call_info["id"]:
-				await channel.delete(reason="Removendo canal de chamada vazia")
+			if not canais_com_gente:
+				excesso = count - limite
+				for c in canais:
+					if c.id != call_info["id"] and excesso > 0:
+						excesso -= 1
+						await c.delete(reason="Limpeza total de calls")
+
+			elif channel.id != call_info["id"]:
+				await channel.delete(reason="Removendo call vazia")
 
 		await self._reorganizar_calls(categoria, call_info)
 
