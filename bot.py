@@ -7,15 +7,11 @@ from utils.console import (
 	reinstall_requirements,
 	upgrade_pip
 )
-from utils.recursos import (
-	Bot,
-	get_config
-)
+from utils.recursos import Bot
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 
-config = get_config()
 bot = Bot()
 
 if __name__ == "__main__":

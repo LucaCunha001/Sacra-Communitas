@@ -79,16 +79,35 @@ class Calls(commands.Cog):
 		canais = [
 			c
 			for c in categoria.voice_channels
-			if c.name.startswith(call_info["nome"]) and c.id != call_info["id"]
+			if c.name.startswith(call_info["nome"])
 		]
 
 		canais.sort(key=lambda c: self._get_call_index(c.name) or 0)
 
+		base_channel = discord.utils.get(canais, id=call_info["id"])
+
+		if not base_channel:
+			return
+
+		base_position = base_channel.position
+
 		for i, canal in enumerate(canais, start=1):
-			novo_nome = f"{call_info['nome']} {i + 1}"
+			novo_nome = self._build_call_name(call_info["nome"], i)
+
+			edits = {}
+
 			if canal.name != novo_nome:
+				edits["name"] = novo_nome
+
+			nova_posicao = base_position + (i - 1)
+
+			if canal.position != nova_posicao:
+				edits["position"] = nova_posicao
+
+			if edits:
 				await canal.edit(
-					name=novo_nome, reason="Reorganizando chamadas dinâmicas"
+					**edits,
+					reason="Reorganizando chamadas dinâmicas"
 				)
 
 	def _get_calls_do_prefixo(
@@ -161,7 +180,7 @@ class Calls(commands.Cog):
 				await categoria.create_voice_channel(
 					name=novo_nome,
 					reason="Criando canal dinâmico",
-					position=channel.position,
+					position=max(c.position for c in canais),
 					overwrites=channel.overwrites,
 				)
 

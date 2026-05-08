@@ -151,14 +151,20 @@ async def buscar_ultima_noticia(session: aiohttp.ClientSession) -> dict | None:
 class NewsView(ui.LayoutView):
 	def __init__(self, noticia: dict[str, str | datetime.datetime], ping: str | None = None):
 		super().__init__(timeout=None)
-		tipo = noticia["link"].split("/")[4].title()
+		tipos = {
+			"papa": "https://static.nationalgeographicbrasil.com/files/styles/image_3200/public/home_papa-leao-14.png.webp?w=1600&h=1287&p=top",
+			"igreja": "https://cdn-imgix.headout.com/microbrands-content-image/image/1c6797c269c9e214698fc63a4264caaa-St.%20Peter's%20Basilica.jpg",
+			"vaticano": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Flag_of_Vatican_City_%282023–present%29.svg",
+			"mundo": "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg"
+		}
+		tipo = noticia["link"].split("/")[4]
 
 		container = ui.Container(
 			ui.Section(
 				ui.TextDisplay(
-					content=f'## {noticia["title"].replace("\n", "").strip()} - {tipo}'
+					content=f'## {noticia["title"].replace("\n", "").strip()} - {tipo.title()}'
 				),
-				accessory=ui.Thumbnail(VATICAN_NEWS_ICON)
+				accessory=ui.Thumbnail(tipos[tipo])
 			),
 			accent_color=0xDB0102
 		)

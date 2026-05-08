@@ -105,12 +105,12 @@ class LogsCog(commands.Cog):
 		self.bot = bot
 		self.session: aiohttp.ClientSession | None = None
 	
-	@commands.command(name="badwords", description="Veja a quantidade de palavrões que alguém falou.")
-	async def badwords_count(self, ctx: commands.Context, member: discord.User = None):
-		user = member if member else ctx.author
+	@app_commands.command(name="badwords", description="Veja a quantidade de palavrões que alguém falou.")
+	async def badwords_count(self, interaction: discord.Interaction, member: discord.User = None):
+		user = member if member else interaction.user
 		member_data = get_member(user.id)
-		final = "ões registrados" if len(member_data["palavroes"] > 1) else "ão registrado"
-		await ctx.reply(f"{user.mention} tem **{member_data['palavroes']}** palavr{final}.")
+		final = "ões registrados" if member_data["palavroes"] > 1 else "ão registrado"
+		await interaction.response.send_message(f"{user.mention} tem **{member_data['palavroes']}** palavr{final}.", ephemeral=True)
 	
 	@commands.Cog.listener()
 	async def on_thread_create(self, thread: discord.Thread):
