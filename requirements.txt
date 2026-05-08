@@ -4,4 +4,3 @@ discord.py
 requests
 better-profanity
 python-dotenv
-pynacl

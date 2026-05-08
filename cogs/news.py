@@ -154,17 +154,26 @@ class NewsView(ui.LayoutView):
 		tipos = {
 			"papa": "https://static.nationalgeographicbrasil.com/files/styles/image_3200/public/home_papa-leao-14.png.webp?w=1600&h=1287&p=top",
 			"igreja": "https://cdn-imgix.headout.com/microbrands-content-image/image/1c6797c269c9e214698fc63a4264caaa-St.%20Peter's%20Basilica.jpg",
-			"vaticano": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Flag_of_Vatican_City_%282023–present%29.svg",
+			"vaticano": "./imagens/Flag_of_Vatican_City_(2023–present).png",
 			"mundo": "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg"
 		}
+
 		tipo = noticia["link"].split("/")[4]
+
+		imagem = tipos[tipo]
+
+		self.file = None
+
+		if not imagem.startswith("http"):
+			self.file = discord.File(imagem, filename="vaticano.png")
+			imagem = "attachment://vaticano.png"
 
 		container = ui.Container(
 			ui.Section(
 				ui.TextDisplay(
 					content=f'## {noticia["title"].replace("\n", "").strip()} - {tipo.title()}'
 				),
-				accessory=ui.Thumbnail(tipos[tipo])
+				accessory=ui.Thumbnail(imagem)
 			),
 			accent_color=0xDB0102
 		)
@@ -235,7 +244,8 @@ class VaticanNewsCog(commands.Cog):
 			return
 
 		try:
-			await webhook.send(view=NewsView(noticia=noticia, ping=ping))
+			new = NewsView(noticia=noticia, ping=ping)
+			await webhook.send(view=new, file=new.file)
 			salvar_ultimo_guid(SERVER_ID, noticia["guid"])
 		except Exception as e:
 			await self.bot.send_to_console(f"[VN] Erro ao enviar webhook: {e}")
@@ -247,7 +257,8 @@ class VaticanNewsCog(commands.Cog):
 	@news_gp.command(name="last", description="Veja a última notícia.")
 	async def last(self, interaction: discord.Interaction):
 		noticia = await buscar_ultima_noticia(self.session)
-		await interaction.response.send_message(view=NewsView(noticia=noticia), ephemeral=True)
+		new = NewsView(noticia=noticia)
+		await interaction.response.send_message(view=new, file=new.file, ephemeral=True)
 
 	@news_gp.command(name="vnstatus", description="Verificar o último GUID salvo.")
 	async def status(self, interaction: discord.Interaction):
