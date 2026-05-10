@@ -26,7 +26,7 @@ class ErrorManager:
 		guild: Optional[discord.Guild],
 		command_name: str,
 		send_user_feedback: Callable[[str], Awaitable[None]],
-		error: Exception
+		error: Exception,
 	):
 		error = self._unwrap(error)
 
@@ -57,7 +57,9 @@ class ErrorManager:
 			return "Eu não tenho permissão pra fazer isso."
 
 		if isinstance(error, app_commands.CommandOnCooldown):
-			return f"⏳ Aguarde {error.retry_after:.2f}s para usar `{command}` novamente."
+			return (
+				f"⏳ Aguarde {error.retry_after:.2f}s para usar `{command}` novamente."
+			)
 
 		return f"Ocorreu um erro ao executar `{command}`."
 
@@ -81,7 +83,9 @@ class ErrorManager:
 		container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
 		container.add_item(ui.TextDisplay(content="### Traceback:"))
 
-		tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+		tb = "".join(
+			traceback.format_exception(type(error), error, error.__traceback__)
+		)
 		tb = tb.replace("```", "`\u200b``")
 
 		for chunk in self._chunk(tb):
@@ -92,32 +96,43 @@ class ErrorManager:
 
 	def _chunk(self, text: str, size: int = 900):
 		for i in range(0, len(text), size):
-			yield text[i:i + size]
+			yield text[i : i + size]
 
 	def _handle_async_exception(self, loop, context):
 		error = context.get("exception") or Exception(context.get("message"))
 
-		asyncio.create_task(self.handle_error(
-			origin="asyncio",
-			user=None,
-			guild=None,
-			command_name="task",
-			send_user_feedback=lambda msg: asyncio.sleep(0),
-			error=error
-		))
+		if loop.is_closed():
+			traceback.print_exception(type(error), error, error.__traceback__)
+			return
+
+		try:
+			loop.create_task(
+				self.handle_error(
+					origin="asyncio",
+					user=None,
+					guild=None,
+					command_name="task",
+					send_user_feedback=lambda msg: asyncio.sleep(0),
+					error=error,
+				)
+			)
+		except RuntimeError:
+			traceback.print_exception(type(error), error, error.__traceback__)
 
 	def _handle_global_exception(self, exc_type, exc_value, exc_traceback):
 		traceback.print_exception(exc_type, exc_value, exc_traceback)
 
 		try:
-			asyncio.run(self.handle_error(
-				origin="global",
-				user=None,
-				guild=None,
-				command_name="startup",
-				send_user_feedback=lambda msg: asyncio.sleep(0),
-				error=exc_value
-			))
+			asyncio.run(
+				self.handle_error(
+					origin="global",
+					user=None,
+					guild=None,
+					command_name="startup",
+					send_user_feedback=lambda msg: asyncio.sleep(0),
+					error=exc_value,
+				)
+			)
 		except RuntimeError:
 			pass
 
@@ -132,9 +147,11 @@ class ErrorManager:
 					guild=None,
 					command_name="internal",
 					send_user_feedback=lambda msg: asyncio.sleep(0),
-					error=e
+					error=e,
 				)
+
 		return wrapper
+
 
 def setup_error_manager(bot: commands.Bot) -> ErrorManager:
 	manager = ErrorManager(bot)
@@ -155,7 +172,7 @@ def setup_error_manager(bot: commands.Bot) -> ErrorManager:
 			guild=interaction.guild,
 			command_name=interaction.command.name if interaction.command else "unknown",
 			send_user_feedback=responder,
-			error=error
+			error=error,
 		)
 
 	@bot.event
@@ -166,7 +183,7 @@ def setup_error_manager(bot: commands.Bot) -> ErrorManager:
 			guild=ctx.guild,
 			command_name=ctx.command.qualified_name if ctx.command else "unknown",
 			send_user_feedback=lambda msg: ctx.send(msg),
-			error=error
+			error=error,
 		)
 
 	@bot.event
@@ -179,7 +196,7 @@ def setup_error_manager(bot: commands.Bot) -> ErrorManager:
 			guild=None,
 			command_name="evento",
 			send_user_feedback=lambda msg: asyncio.sleep(0),
-			error=error
+			error=error,
 		)
 
 	return manager

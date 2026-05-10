@@ -160,12 +160,12 @@ class NewsView(ui.LayoutView):
 
 		tipo = noticia["link"].split("/")[4]
 
-		imagem = tipos[tipo]
+		imagem = tipos.get(tipo, VATICAN_NEWS_ICON)
 
-		self.file = None
+		self.files = []
 
 		if not imagem.startswith("http"):
-			self.file = discord.File(imagem, filename="vaticano.png")
+			self.files.append(discord.File(imagem, filename="vaticano.png"))
 			imagem = "attachment://vaticano.png"
 
 		container = ui.Container(
@@ -243,12 +243,9 @@ class VaticanNewsCog(commands.Cog):
 		if noticia["guid"] == ultimo_guid:
 			return
 
-		try:
-			new = NewsView(noticia=noticia, ping=ping)
-			await webhook.send(view=new, file=new.file)
-			salvar_ultimo_guid(SERVER_ID, noticia["guid"])
-		except Exception as e:
-			await self.bot.send_to_console(f"[VN] Erro ao enviar webhook: {e}")
+		new = NewsView(noticia=noticia, ping=ping)
+		await webhook.send(view=new, files=new.files)
+		salvar_ultimo_guid(SERVER_ID, noticia["guid"])
 
 	news_gp = app_commands.Group(
 		name="news", description="Comandos relacionados às notícias do Vaticano."
@@ -258,7 +255,7 @@ class VaticanNewsCog(commands.Cog):
 	async def last(self, interaction: discord.Interaction):
 		noticia = await buscar_ultima_noticia(self.session)
 		new = NewsView(noticia=noticia)
-		await interaction.response.send_message(view=new, file=new.file, ephemeral=True)
+		await interaction.response.send_message(view=new, files=new.files, ephemeral=True)
 
 	@news_gp.command(name="vnstatus", description="Verificar o último GUID salvo.")
 	async def status(self, interaction: discord.Interaction):
