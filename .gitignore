@@ -1,0 +1,12 @@
+__pycache__/
+.venv/
+logs/
+*.log
+*.zip
+zipping.py
+tabs.py
+subs.py
+membros.json
+.env
+*.db
+gitcommit.txt

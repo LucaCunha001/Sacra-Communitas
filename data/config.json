@@ -1,0 +1,131 @@
+{
+	"canais": {
+		"punicoes": 1429165386951299284,
+		"geral": 1429152790608871546,
+		"solicitacoes_sacerdocio": 1429205001003208747,
+		"nomeacoes": 1429791813555716206,
+		"regras": 1429160711912685588,
+		"codigo": 1430629620499222759,
+		"categoria_tickets": 1431318653436952727,
+		"solicitacoes_sacerdocio_pub": 1441791343558135828,
+		"intencoes": 1460679400424079400,
+		"intencoes_solicitacoes": 1460668350618271824,
+		"sugestoes": 1429967975934333029,
+		"calls_category": 1430145411427074058
+	},
+	"cargos": {
+		"sacerdotes": {
+			"Papa": {
+				"id": 1429152819079938048,
+				"descricao": "O líder supremo da fé, responsável por guiar os sacerdotes e a comunidade espiritual."
+			},
+			"Cardeal": {
+				"id": 1429153324569202708,
+				"descricao": "Um alto oficial da igreja, encarregado de aconselhar o Papa e supervisionar várias dioceses."
+			},
+			"Arcebispo": {
+				"id": 1429912579370782832,
+				"descricao": "Um líder eclesiástico de alta hierarquia que supervisiona uma arquidiocese, orientando bispos e sacerdotes sob sua jurisdição. É responsável por garantir a fidelidade doutrinal, a unidade pastoral e a administração dos sacramentos em sua província eclesiástica."
+			},
+			"Bispo": {
+				"id": 1429194602719739974,
+				"descricao": "Um líder religioso que supervisiona uma diocese e é responsável pela administração dos sacramentos."
+			},
+			"Padre": {
+				"id": 1429195878060658829,
+				"descricao": "Um sacerdote que serve em uma paróquia local, conduzindo missas e oferecendo orientação espiritual à congregação."
+			},
+			"Diácono": {
+				"id": 1429228843121508452,
+				"descricao": "Um ministro ordenado que auxilia os padres e bispos em suas funções litúrgicas e caritativas."
+			},
+			"Seminarista": {
+				"id": 1429229087771201668,
+				"descricao": "Um estudante em formação para se tornar sacerdote, dedicando-se ao estudo teológico e à prática pastoral."
+			},
+			"Clero": {
+				"id": 1429794483297456160,
+				"descricao": "Sacerdotes que serve à igreja, exercendo funções espirituais, litúrgicas e pastorais, e garantindo a orientação religiosa da comunidade."
+			}
+		},
+		"membros": {
+			"Leigo": {
+				"id": 1429448132323971082,
+				"descricao": "Um membro dedicado da comunidade, comprometido com a fé e os ensinamentos da igreja."
+			},
+			"Noviço": {
+				"id": 1429448829203382512,
+				"descricao": "Um novo membro em período de prova, aprendendo sobre a fé e os valores da comunidade."
+			}
+		},
+		"anjos": {
+			"Anjo": {
+				"id": 1429455411916050534,
+				"descricao": "Um mensageiro divino, dedicado a proteger e guiar os membros da comunidade."
+			},
+			"Anjo da Guarda": {
+				"id": 1429455643504414811,
+				"descricao": "Um protetor espiritual, designado para cuidar e orientar um membro específico da comunidade."
+			},
+			"Arcanjo": {
+				"id": 1429155415161176134,
+				"descricao": "Um anjo de alta hierarquia, encarregado de missões especiais e da liderança de outros anjos."
+			},
+			"Virtude": {
+				"id": 1429458782504615966,
+				"descricao": "Um anjo de alta hierarquia, conhecido por sua força e capacidade de realizar milagres."
+			},
+			"Dominação": {
+				"id": 1429474989576556554,
+				"descricao": "São responsáveis por governar os anjos inferiores e distribuir suas funções para garantir que a vontade de Deus seja cumprida."
+			},
+			"Querubim": {
+				"id": 1429455138447425547,
+				"descricao": "Um anjo de alta hierarquia, conhecido por sua sabedoria e proximidade com o divino."
+			},
+			"Serafim": {
+				"id": 1429455548134199516,
+				"descricao": "Um anjo de alta hierarquia, conhecido por sua pureza e devoção ardente a Deus."
+			}
+		},
+		"config": {
+			"ja_fui_booster": 1430640923783594191
+		}
+	},
+	"urls": {
+		"requests": {
+			"liturgia": "https://liturgia.up.railway.app/v3/"
+		}
+	},
+	"liturgia": {
+		"hora": "06:00",
+		"canal": 1429517914494603274,
+		"ping": 1429518787891433718
+	},
+	"logs": {
+		"ticket_logs": 1430967464824410222,
+		"msgs_apagadas": 1430157409195655188,
+		"msgs_editadas": 1430157454540410921,
+		"cargos_alterados": 1430967547645399241
+	},
+	"calls": {
+		"Orações": {
+			"id": 1430145620823244921,
+			"nome": "🙏・Orações"
+		},
+		"Coro da Capela": {
+			"id": 1434849542645219439,
+			"nome": "💫・Coro da Capela"
+		},
+		"Café": {
+			"id": 1440431123929763840,
+			"nome": "☕・Café"
+		}
+	},
+	"config": {
+		"servidores": {
+			"apel": 1464281876507398168,
+			"main": 1429152785252876328
+		}
+	}
+}
