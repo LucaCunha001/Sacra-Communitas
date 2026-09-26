@@ -148,10 +148,6 @@ class WebhookCog(commands.Cog):
 			"Avisos": {
 				"id": 1429791707960180786,
 				"text": "Avisos recentes da comunidade."
-			},
-			"Código Canônico": {
-				"id": 1430629620499222759,
-				"text": "Código contendo as principais informações sobre o funcionamento prático do servidor."
 			}
 		}
 		container = ui.Container(
@@ -161,7 +157,7 @@ class WebhookCog(commands.Cog):
 					"Olá, fiel!\n\n"
 					"Esta comunidade foi criada para acolher e guiar os seguidores do Catolicismo, proporcionando um espaço seguro e temático baseado na fé e nos ensinamentos da Santa Igreja Católica."
 				),
-				accessory=ui.Thumbnail(interaction.guild.icon.url)
+				accessory=ui.Thumbnail(self.bot.guild_icon)
 			),
 			ui.Separator(),
 			ui.TextDisplay(

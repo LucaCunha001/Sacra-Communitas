@@ -57,7 +57,7 @@ class RemoveWarnOptions(discord.ui.Select):
 		)
 
 		await interaction.response.edit_message(embed=embed, view=None)
-		await log_punicao(interaction.guild, TipoPunicao.Unwarn, self.membro, interaction.user, self.motivo)
+		await log_punicao(interaction.guild, TipoPunicao.RevogacaoPenitencia, self.membro, interaction.user, self.motivo)
 
 
 class WarnGP(app_commands.Group):
@@ -89,6 +89,7 @@ class WarnGP(app_commands.Group):
 
 		idx = min(len(membro_json["warns"]) - 1, len(tabela_mute) - 1)
 		dados = tabela_mute[idx]
+		agora = datetime.datetime.now(datetime.timezone.utc)
 		duracao = datetime.timedelta(
 			hours=dados.get("hours", 0),
 			days=dados.get("days", 0),
@@ -110,8 +111,32 @@ class WarnGP(app_commands.Group):
 			user=membro,
 		)
 
+		total_segundos = max(0, int(duracao.total_seconds()))
+
+		dias, resto = divmod(total_segundos, 86400)
+		horas, resto = divmod(resto, 3600)
+		minutos, segundos = divmod(resto, 60)
+
+		duracao = []
+		if dias:
+			duracao.append(f"{dias}d")
+		if horas:
+			duracao.append(f"{horas}h")
+		if minutos:
+			duracao.append(f"{minutos}m")
+		if segundos:
+			duracao.append(f"{segundos}s")
+
+		duracao_str = " ".join(duracao) if duracao else "Expirando..."
+		fim_str = (
+			f"{discord.utils.format_dt(agora + duracao, style='R')} "
+			f"{discord.utils.format_dt(agora + duracao, style='f')}"
+		)
+
+		extras = {"Duração": duracao_str, "Fim": fim_str}
+
 		await interaction.followup.send(embed=embed, ephemeral=True)
-		await log_punicao(interaction.guild, TipoPunicao.Warn, membro, interaction.user, motivo)
+		await log_punicao(interaction.guild, TipoPunicao.Penitencia, membro, interaction.user, motivo, extras)
 	
 	@app_commands.command(name="log", description="Veja as penitências de um membro")
 	@is_staff()
@@ -166,7 +191,7 @@ class WarnGP(app_commands.Group):
 		)
 
 		view = discord.ui.View(timeout=60)
-		view.add_item(self.RemoveWarnOptions(membro=membro, motivo=motivo))
+		view.add_item(RemoveWarnOptions(membro=membro, motivo=motivo))
 
 		await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 

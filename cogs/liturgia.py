@@ -26,8 +26,8 @@ class LiturgiaCog(commands.Cog):
 		)
 
 		self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(
-        ssl=ssl_context
-    ))
+		ssl=ssl_context
+	))
 		if not bot.debug:
 			self.envio_liturgia.start()
 	
@@ -425,17 +425,64 @@ class LiturgiaCog(commands.Cog):
 			data = await response.json()
 
 		celebracoes = data.get("celebracoes", [])
-		if not celebracoes:
-			return {}
 
-		celebracao = next((c for c in celebracoes if c.get("principal")), celebracoes[0])
+		if celebracoes:
+			celebracao = next((c for c in celebracoes if c.get("principal")), celebracoes[0])
+
+			return {
+				"titulo": celebracao.get("liturgia", ""),
+				"cor": celebracao.get("cor", "Amarelo"),
+				"leituras": celebracao.get("leituras", []),
+				"oracoes": celebracao.get("oracoes", {}),
+				"antifonas": celebracao.get("antifonas", {})
+			}
+
+		url_v2 = url.replace("v3", "")
+		
+		async with self.session.get(url_v2) as response:
+			data = await response.json()
+
+		leituras = []
+
+		def adicionar(rotulo, leitura):
+			if not isinstance(leitura, dict):
+				return
+
+			leituras.append({
+				"rotulo": rotulo,
+				"opcoes": [{
+					"referencia": leitura.get("referencia", ""),
+					"titulo": leitura.get("titulo", rotulo),
+					"texto": leitura.get("texto", "")
+				}]
+			})
+
+		adicionar("Primeira Leitura", data.get("primeiraLeitura"))
+
+		salmo = data.get("salmo")
+		if isinstance(salmo, dict):
+			leituras.append({
+				"rotulo": "Salmo",
+				"opcoes": [{
+					"referencia": salmo.get("referencia", ""),
+					"titulo": "Salmo Responsorial",
+					"texto": f"{salmo.get('refrao', '')}\n\n{salmo.get('texto', '')}".strip()
+				}]
+			})
+
+		adicionar("Segunda Leitura", data.get("segundaLeitura"))
+		adicionar("Evangelho", data.get("evangelho"))
 
 		return {
-			"titulo": celebracao.get("liturgia", ""),
-			"cor": celebracao.get("cor", "Amarelo"),
-			"leituras": celebracao.get("leituras", []),
-			"oracoes": celebracao.get("oracoes", {}),
-			"antifonas": celebracao.get("antifonas", {})
+			"titulo": data.get("liturgia", ""),
+			"cor": data.get("cor", "Amarelo"),
+			"leituras": leituras,
+			"oracoes": {
+				"coleta": data.get("dia", ""),
+				"oferendas": data.get("oferendas", ""),
+				"comunhao": data.get("comunhao", "")
+			},
+			"antifonas": data.get("antifonas", {})
 		}
 
 async def setup(bot: Bot):
