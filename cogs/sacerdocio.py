@@ -189,16 +189,16 @@ class InscricoesView(ui.LayoutView):
 		super().__init__(timeout=None)
 		buttons = [
 			ui.Button(
-				label="Sacerdócio",
+				label="Administração",
 				style=discord.ButtonStyle.link,
-				url=bot.config["forms"]["sacerdocio"],
+				url=bot.config["forms"]["administracao"],
 				emoji="🕊️",
 			),
 			ui.Button(
-				label="Secretaria",
+				label="Moderação",
 				style=discord.ButtonStyle.link,
-				url=bot.config["forms"]["secretaria"],
-				emoji="📋",
+				url=bot.config["forms"]["moderacao"],
+				emoji="🕊️",
 			),
 			ui.Button(
 				label="Teologia",
