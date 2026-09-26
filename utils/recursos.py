@@ -488,7 +488,7 @@ class Bot(commands.Bot):
 		self.debug = (
 			debug_env.strip().lower() in {"1", "true", "yes"}
 			if debug_env
-			else is_unix()
+			else not is_unix()
 		)
 
 	async def on_ready(self):
