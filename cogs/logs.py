@@ -139,30 +139,6 @@ class LogsCog(commands.Cog):
 				print(f"Sem permissão para adicionar cargo ao membro {member}")
 			except discord.HTTPException as e:
 				print(f"Erro ao adicionar cargo: {e}")
-		
-		channel_id = self.bot.config['canais'].get('geral')
-		channel = self.bot.get_channel(channel_id) if channel_id else None
-
-		if channel:
-			view = ui.LayoutView()
-			container = ui.Container(
-				ui.Section(
-					ui.TextDisplay(
-						"## ✨ Bem-vindo(a)!"
-					),
-					accessory=ui.Thumbnail(member.display_avatar.url)
-				),
-				ui.Separator(),
-				ui.TextDisplay(
-					f"Seja bem-vindo(a) ao servidor, {member.mention}!\n\nLeia veja algumas instruções em <id:guide> e aproveite sua estadia!"
-				),
-				ui.TextDisplay(
-					f"-# {guild.name} • Leigo"
-				),
-				accent_color=0xffcc00
-			)
-			view.add_item(container)
-			await channel.send(view=view)
 	
 	@commands.Cog.listener()
 	async def on_message(self, msg: discord.Message):		
@@ -386,7 +362,7 @@ class LogsCog(commands.Cog):
 					await message.delete()
 					break
 					
-			if embed.description and "Bump done" in embed.description:
+			if embed.description and "Bump done" in embed.description or "Bump feito" in embed.description:
 				await msg.channel.send(view=GetBumpRole(msg.guild))
 
 	@commands.Cog.listener()
@@ -634,7 +610,7 @@ class LogsCog(commands.Cog):
 		container = ui.Container(
 			ui.Section(
 				ui.TextDisplay(f"{icone_nivel} **Subimos para o Nível {nivel}!**"),
-				accessory=ui.Thumbnail(guild.icon.url) if guild.icon else None
+				accessory=ui.Thumbnail(self.bot.guild_icon) if self.bot.guild_icon else None
 			),
 			accent_color=0xFFCC00
 		)

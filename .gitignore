@@ -10,3 +10,4 @@ membros.json
 .env
 *.db
 gitcommit.txt
+*.bat

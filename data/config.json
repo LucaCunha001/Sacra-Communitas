@@ -13,6 +13,11 @@
 		"sugestoes": 1429967975934333029,
 		"calls_category": 1430145411427074058
 	},
+	"forms": {
+		"sacerdocio": "https://dyno.gg/form/PLACEHOLDER_SACERDOCIO",
+		"secretaria": "https://dyno.gg/form/PLACEHOLDER_SECRETARIA",
+		"teologia": "https://dyno.gg/form/PLACEHOLDER_TEOLOGIA"
+	},
 	"cargos": {
 		"sacerdotes": {
 			"Papa": {
@@ -94,7 +99,7 @@
 	},
 	"urls": {
 		"requests": {
-			"liturgia": "https://liturgia.up.railway.app/v3/"
+			"liturgia": "https://liturgia.up.railway.app/v3"
 		}
 	},
 	"liturgia": {

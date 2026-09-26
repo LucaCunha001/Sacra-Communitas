@@ -65,51 +65,107 @@ class Calls(commands.Cog):
 			f"Chamada '{call_name}' registrada com sucesso.", ephemeral=True
 		)
 
+	async def _hide_channel(self, channel: discord.VoiceChannel):
+		overwrites = channel.overwrites
+
+		overwrites[channel.guild.default_role] = discord.PermissionOverwrite(
+			view_channel=False
+		)
+
+		await channel.edit(
+			overwrites=overwrites,
+			reason="Ocultando call"
+		)
+
+
+	async def _show_channel(self, channel: discord.VoiceChannel):
+		overwrites = channel.overwrites
+
+		if channel.guild.default_role in overwrites:
+			overwrite = overwrites[channel.guild.default_role]
+
+			overwrite.view_channel = None
+
+			if overwrite.is_empty():
+				del overwrites[channel.guild.default_role]
+			else:
+				overwrites[channel.guild.default_role] = overwrite
+
+		await channel.edit(
+			overwrites=overwrites,
+			reason="Exibindo call"
+		)
+		return channel
+	
+	def _get_hidden_channel(
+		self,
+		canais: list[discord.VoiceChannel],
+		guild: discord.Guild,
+	) -> discord.VoiceChannel | None:
+		for canal in canais:
+			overwrite = canal.overwrites_for(guild.default_role)
+
+			if overwrite.view_channel is False:
+				return canal
+
+		return None
+
 	def _get_call_index(self, channel_name: str) -> int | None:
 		try:
 			return int(channel_name.rsplit(" ", 1)[-1])
 		except (ValueError, IndexError):
 			return None
 
+	def _is_hidden(self, channel: discord.VoiceChannel) -> bool:
+		return (
+			channel.overwrites_for(channel.guild.default_role).view_channel
+			is False
+		)
+
+	def _get_visible_channels(self, canais: list[discord.VoiceChannel]):
+		return [c for c in canais if not self._is_hidden(c)]
+
+	def _get_hidden_channels(self, canais: list[discord.VoiceChannel]):
+		return [c for c in canais if self._is_hidden(c)]
+
 	async def _reorganizar_calls(
-		self,
-		categoria: discord.CategoryChannel,
-		call_info: dict,
-	):
-		canais = [
-			c
-			for c in categoria.voice_channels
-			if c.name.startswith(call_info["nome"])
-		]
+    self,
+    categoria: discord.CategoryChannel,
+    call_info: dict,
+) -> None:
+		todos = self._get_call_channels(categoria, call_info)
 
-		canais.sort(key=lambda c: self._get_call_index(c.name) or 0)
+		visiveis = self._get_visible_channels(todos)
+		ocultos = self._get_hidden_channels(todos)
 
-		base_channel = discord.utils.get(canais, id=call_info["id"])
+		visiveis.sort(key=lambda c: self._get_call_index(c.name) or 0)
+		ocultos.sort(key=lambda c: self._get_call_index(c.name) or 0)
+
+		base_channel = discord.utils.get(todos, id=call_info["id"])
 
 		if not base_channel:
 			return
 
 		base_position = base_channel.position
 
-		for i, canal in enumerate(canais, start=1):
-			novo_nome = self._build_call_name(call_info["nome"], i)
+		canais = visiveis + ocultos
 
+		for i, canal in enumerate(canais, start=1):
 			edits = {}
 
+			novo_nome = self._build_call_name(call_info["nome"], i)
 			if canal.name != novo_nome:
 				edits["name"] = novo_nome
 
 			nova_posicao = base_position + (i - 1)
-
 			if canal.position != nova_posicao:
 				edits["position"] = nova_posicao
 
 			if edits:
 				await canal.edit(
 					**edits,
-					reason="Reorganizando chamadas dinâmicas"
+					reason="Reorganizando chamadas dinâmicas",
 				)
-
 	def _get_calls_do_prefixo(
 		self, categoria: discord.CategoryChannel, call_info: dict
 	):
@@ -166,44 +222,44 @@ class Calls(commands.Cog):
 			return
 
 		call_info = calls[call_key]
+
 		canais = self._get_call_channels(categoria, call_info)
+		visiveis = self._get_visible_channels(canais)
+		ocultos = self._get_hidden_channels(canais)
 
 		membros = len(channel.members)
 		limite = 3
 
-		if membros == 1 and channel.name.startswith(call_info["nome"]):
-			if not self._has_empty_channel(canais) or len(canais) <= limite:
+		# Entrou alguém na call
+		if membros == 1 and not self._is_hidden(channel):
+
+			existe_vazia = any(len(c.members) == 0 for c in visiveis)
+
+			if not existe_vazia or len(visiveis) <= limite:
 				novo_nome = self._build_call_name(
-					call_info["nome"], self._get_next_index(canais)
+					call_info["nome"],
+					len(visiveis) + 1
 				)
 
-				await categoria.create_voice_channel(
-					name=novo_nome,
-					reason="Criando canal dinâmico",
-					position=max(c.position for c in canais),
-					overwrites=channel.overwrites,
-				)
+				if ocultos:
+					canal = await self._show_channel(ocultos[0])
+					await canal.edit(name=novo_nome)
 
-		elif membros == 0:
-			canais_com_gente = [c for c in canais if len(c.members) > 0]
+				else:
+					await categoria.create_voice_channel(
+						name=novo_nome,
+						position=max(c.position for c in canais),
+						overwrites=channel.overwrites,
+						reason="Criando canal dinâmico"
+					)
 
-			count = len(canais)
+		elif membros == 0 and not self._is_hidden(channel):
 
-			if count <= limite:
-				return
-
-			if not canais_com_gente:
-				excesso = count - limite
-				for c in canais:
-					if c.id != call_info["id"] and excesso > 0:
-						excesso -= 1
-						await c.delete(reason="Limpeza total de calls")
-
-			elif channel.id != call_info["id"]:
-				await channel.delete(reason="Removendo call vazia")
+			if len(visiveis) > limite and channel.id != call_info["id"]:
+				await self._hide_channel(channel)
 
 		await self._reorganizar_calls(categoria, call_info)
-
+	
 	@commands.Cog.listener()
 	async def on_voice_state_update(
 		self,
