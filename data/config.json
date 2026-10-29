@@ -7,7 +7,7 @@
 		"regras": 1429160711912685588,
 		"codigo": 1430629620499222759,
 		"categoria_tickets": 1431318653436952727,
-		"solicitacoes_sacerdocio_pub": 1441791343558135828,
+		"inscricoes": 1441791343558135828,
 		"intencoes": 1460679400424079400,
 		"intencoes_solicitacoes": 1460668350618271824,
 		"sugestoes": 1429967975934333029,
@@ -51,6 +51,32 @@
 			"Clero": {
 				"id": 1429794483297456160,
 				"descricao": "Sacerdotes que serve à igreja, exercendo funções espirituais, litúrgicas e pastorais, e garantindo a orientação religiosa da comunidade."
+			}
+		},
+		"moderativos": {
+			"Comandante": {
+				"id": 1553800040076681306,
+				"descricao": "A mais alta autoridade da estrutura moderativa, responsável por coordenar os demais militares, supervisionar a atuação da equipe e tomar decisões administrativas dentro de sua competência."
+			},
+			"Tenente": {
+				"id": 1553800056136536135,
+				"descricao": "Um oficial responsável por auxiliar o Comandante na coordenação da equipe, supervisionando os níveis inferiores e assumindo responsabilidades de comando quando necessário."
+			},
+			"Sargento": {
+				"id": 1553800079599607898,
+				"descricao": "Um graduado responsável por supervisionar a atuação dos cabos e soldados, orientar a equipe e garantir o cumprimento das normas de moderação."
+			},
+			"Cabo": {
+				"id": 1553800087027716136,
+				"descricao": "Um membro da equipe com função de supervisão básica, responsável por auxiliar os soldados e atuar diretamente na manutenção da ordem e das normas da comunidade."
+			},
+			"Soldado": {
+				"id": 1553800095047229541,
+				"descricao": "O nível inicial da estrutura moderativa, responsável por auxiliar na manutenção da ordem, fiscalizar o cumprimento das regras e encaminhar situações que exijam autoridade superior."
+			},
+			"Militar": {
+				"id": 1553802577353637908,
+				"descricao": "Membro da estrutura moderativa responsável pela manutenção da ordem, aplicação das normas e proteção da organização da comunidade."
 			}
 		},
 		"membros": {

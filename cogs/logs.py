@@ -12,13 +12,14 @@ from better_profanity import profanity
 
 from discord import ui, app_commands
 from discord.ext import commands
+from requests import delete
 
 from utils.catecismo import check_cic_verse, load_session
 from utils.data import DataFiles, get_member, save_member
 from utils.logs import log_normal, log_punicao, TipoPunicao
 from utils.recursos import Bot, expand_bible_verse, _personalize_transcript
 
-from .sacerdocio import SacerdocioCog
+from .administracao import SacerdocioCog
 
 CYRILLIC_TO_LATIN = str.maketrans({
 	"А": "A", "В": "B", "Е": "E", "К": "K", "М": "M",
@@ -104,6 +105,7 @@ class LogsCog(commands.Cog):
 	def __init__(self, bot: Bot):
 		self.bot = bot
 		self.session: aiohttp.ClientSession | None = None
+		self.forbidden_emojis = "🫃🫄🖕🍆🍑🥵🤬💅🥒🍒🍌"
 	
 	@app_commands.command(name="badwords", description="Veja a quantidade de palavrões que alguém falou.")
 	async def badwords_count(self, interaction: discord.Interaction, member: discord.User = None):
@@ -141,6 +143,14 @@ class LogsCog(commands.Cog):
 				print(f"Erro ao adicionar cargo: {e}")
 	
 	@commands.Cog.listener()
+	async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
+		if user == self.bot.user:
+			return
+
+		if str(reaction.emoji) in self.forbidden_emojis:
+			await reaction.clear()
+
+	@commands.Cog.listener()
 	async def on_message(self, msg: discord.Message):		
 		await self.publish_if_news(msg=msg)
 		await self.check_boost_message(msg=msg)
@@ -151,12 +161,19 @@ class LogsCog(commands.Cog):
 		
 		if msg.author.bot:
 			return
-		
-		await check_cic_verse(msg=msg)
-		await self.check_bible_verse(msg=msg)
+
+		if msg.channel.category_id != 1556047113362608169:
+			await check_cic_verse(msg=msg)
+			await self.check_bible_verse(msg=msg)
 
 		if not isinstance(msg.channel, discord.DMChannel):
 			await self.check_badword(msg=msg)
+
+	async def delete_msg_with_forbidden_emojis(self, msg: discord.Message):
+		for emoji in self.forbidden_emojis:
+			if emoji in msg.content:
+				
+				await msg.delete()
 
 	async def publish_if_news(self, msg: discord.Message):
 		if msg.channel.type != discord.ChannelType.news:

@@ -6,3 +6,4 @@ better-profanity>=0.6.0
 python-dotenv>=1.0.0
 tzdata>=2025.1
 certifi>=2024.12.7
+lxml

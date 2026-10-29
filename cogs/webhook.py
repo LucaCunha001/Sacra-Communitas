@@ -113,7 +113,7 @@ class WebhookCog(commands.Cog):
 		message_id="O ID da mensagem a ser editada (Caso tenha)",
 	)
 	async def send_message(
-		self, interaction: discord.Interaction, url: str, message_id: int = None
+		self, interaction: discord.Interaction, url: str, message_id: str = None
 	):
 		data: DataDict = self.get_webhook_embeds("Convite")
 
@@ -122,7 +122,7 @@ class WebhookCog(commands.Cog):
 		async with aiohttp.ClientSession() as session:
 			webhook = Webhook.from_url(url, session=session)
 			if message_id:
-				await webhook.edit_message(message_id=message_id, view=view)
+				await webhook.edit_message(message_id=int(message_id), view=view)
 			else:
 				await webhook.send(
 					view=view,

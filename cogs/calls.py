@@ -129,9 +129,9 @@ class Calls(commands.Cog):
 		return [c for c in canais if self._is_hidden(c)]
 
 	async def _reorganizar_calls(
-    self,
-    categoria: discord.CategoryChannel,
-    call_info: dict,
+	self,
+	categoria: discord.CategoryChannel,
+	call_info: dict,
 ) -> None:
 		todos = self._get_call_channels(categoria, call_info)
 

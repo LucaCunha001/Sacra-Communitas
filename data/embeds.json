@@ -9,12 +9,18 @@
 						"type": 10,
 						"content": "# 🇻🇦 Seja bem-vindo à Sacra Communitas!\n\n> Imagine um lugar onde a fé é vivida com reverência, serenidade e caridade.\n> Um espaço criado para ser **refúgio aos católicos**, mas também **acolhedor a todos que desejam conhecer, dialogar e caminhar com respeito**.\n> Aqui, encontramos para dialogar em comunhão com todos."
 					},
-					{"type": 14, "spacing": 2},
+					{
+						"type": 14,
+						"spacing": 2
+					},
 					{
 						"type": 10,
 						"content": "## O que você encontrará na Sacra Communitas:\n\n- **📖 Ensino da Doutrina Católica**  \n  Espaços dedicados ao estudo dos dogmas, da tradição, da moral e da história da Igreja, sempre com fidelidade ao Magistério.\n\n- **🕯️ Liturgia Diária**  \n  Leitura diária da liturgia, atualizada todos os dias, para acompanhar o ritmo da Igreja e santificar o cotidiano.\n\n- **📜 Leitura da Sagrada Escritura**  \n  Ambientes para leitura, reflexão e partilha da Palavra de Deus, com respeito e profundidade.\n\n- **🙏 Espaços de Oração**  \n  Canais reservados para intenções, orações comunitárias e momentos de recolhimento espiritual.\n\n- **💬 Convivência e Acolhimento**  \n  Um ambiente moderado, respeitoso e fraterno, onde católicos e visitantes podem conversar sem hostilidade, ironia ou ataques à fé.\n\n> *Aqui, buscamos ordem antes do ruído, caridade antes do conflito e verdade antes do orgulho.*\n> *Se você procura um espaço sério, sereno e bem cuidado, este lugar pode ser seu lar.* "
 					},
-					{"type": 14, "spacing": 2},
+					{
+						"type": 14,
+						"spacing": 2
+					},
 					{
 						"type": 10,
 						"content": "🔔 **Entre e sinta-se à vontade para permanecer.**  \nO Sacra Communitas está de portas abertas."
@@ -24,7 +30,7 @@
 						"items": [
 							{
 								"media": {
-									"url": "https://cdn.discordapp.com/icons/1429152785252876328/4e643b90f560b8c8b44841a8cf4ebb2c.png?size=2048"
+									"url": "https://media.discordapp.net/attachments/1430680590218432663/1528455829001343167/4e643b90f560b8c8b44841a8cf4ebb2c.png?ex=6acd1aea&is=6acbc96a&hm=125d4849c311fbba568dc1114bd5534de78cadd6b159606028f5a95882573d83"
 								}
 							}
 						]
@@ -36,7 +42,9 @@
 								"type": 2,
 								"style": 5,
 								"url": "https://discord.gg/NJMTbNukrk",
-								"emoji": {"name": "🙏"},
+								"emoji": {
+									"name": "🙏"
+								},
 								"label": "Entrar no servidor"
 							}
 						]
@@ -46,6 +54,6 @@
 			}
 		],
 		"username": "Sacra Communitas",
-		"avatar_url": "https://cdn.discordapp.com/icons/1429152785252876328/4e643b90f560b8c8b44841a8cf4ebb2c.png?size=2048"
+		"avatar_url": "https://media.discordapp.net/attachments/1430680590218432663/1528455829001343167/4e643b90f560b8c8b44841a8cf4ebb2c.png?ex=6acd1aea&is=6acbc96a&hm=125d4849c311fbba568dc1114bd5534de78cadd6b159606028f5a95882573d83"
 	}
 }

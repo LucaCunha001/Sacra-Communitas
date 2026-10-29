@@ -354,13 +354,14 @@ class TicketView(ui.LayoutView):
 		self.bot = bot
 		self.ticket_type = ticket_type
 		specs = _get_ticket_message_specs(ticket_type)
+		member = bot.get_guild(bot.config["config"]["servidores"]["main"]).get_member(user.id)
 		container = ui.Container(
 			ui.Section(
 				ui.TextDisplay(f"## {specs['title']}"),
 				accessory=ui.Thumbnail(bot.guild_icon),
 			),
 			ui.Separator(spacing=discord.SeparatorSpacing.large),
-			ui.TextDisplay(f"@everyone {user.mention}"),
+			ui.TextDisplay(user.mention if member and member.guild_permissions.manage_messages else f"@everyone {user.mention}"),
 			ui.TextDisplay(specs["description"]),
 			ui.TextDisplay("-# Sitema de ticket da Sacra Communitas"),
 			accent_color=specs["color"],
@@ -558,12 +559,11 @@ class TicketView(ui.LayoutView):
 		channel: discord.TextChannel,
 		staff: discord.User,
 	):
-		file = discord.File(
-			io.BytesIO(transcript_html.encode()), filename=f"ticket-{channel.id}.html"
-		)
-		user_log_view = self._create_ticket_log_view(channel, qm_abriu, staff, file)
+		file1 = discord.File(io.BytesIO(transcript_html.encode()), filename=f"ticket-{channel.id}.html")
+		file2 = discord.File(io.BytesIO(transcript_html.encode()), filename=f"ticket-{channel.id}.html")
+		user_log_view = self._create_ticket_log_view(channel, qm_abriu, staff, file1)
 		try:
-			await qm_abriu.send(view=user_log_view, file=file)
+			await qm_abriu.send(view=user_log_view, file=file1)
 		except discord.Forbidden:
 			print("Não consegui enviar a DM ao usuário, permissão negada.")
 		except discord.NotFound:
@@ -574,8 +574,8 @@ class TicketView(ui.LayoutView):
 		config = get_config()
 		log_channel = self.bot.get_channel(config["logs"]["ticket_logs"])
 		if log_channel:
-			log_view = self._create_ticket_log_view(channel, qm_abriu, staff, file)
-			await log_channel.send(view=log_view, file=file)
+			log_view = self._create_ticket_log_view(channel, qm_abriu, staff, file2)
+			await log_channel.send(view=log_view, file=file2)
 
 	class _FakeUser:
 		def __init__(self, id_):
@@ -625,7 +625,7 @@ class AddMemberModal(discord.ui.Modal):
 					accent_color=0x2ECC71,
 				)
 				layout.add_item(container)
-				await interaction.followup.send(view=layout, ephemeral=True)
+				await interaction.followup.send(view=layout)
 			else:
 				error_layout = ui.LayoutView(timeout=None)
 				error_container = ui.Container(
@@ -687,11 +687,11 @@ class RemoveMemberModal(discord.ui.Modal):
 						accessory=ui.Thumbnail(member.display_avatar.url),
 					),
 					ui.Separator(spacing=discord.SeparatorSpacing.large),
-					ui.TextDisplay(f"{member.mention} saiu do ticket com sucesso."),
+					ui.TextDisplay(f"{member.mention} foi removido do ticket com sucesso."),
 					accent_color=0xE74C3C,
 				)
 				layout.add_item(container)
-				await interaction.followup.send(view=layout, ephemeral=True)
+				await interaction.followup.send(view=layout)
 			else:
 				error_layout = ui.LayoutView(timeout=None)
 				error_container = ui.Container(
