@@ -1,5 +1,4 @@
 import aiohttp
-import chat_exporter
 import datetime
 import discord
 import io
@@ -7,7 +6,6 @@ import unicodedata
 import random
 import re
 
-from bs4 import BeautifulSoup
 from better_profanity import profanity
 
 from discord import ui, app_commands
@@ -17,9 +15,11 @@ from requests import delete
 from utils.catecismo import check_cic_verse, load_session
 from utils.data import DataFiles, get_member, save_member
 from utils.logs import log_normal, log_punicao, TipoPunicao
-from utils.recursos import Bot, expand_bible_verse, _personalize_transcript
+from utils.exporter import export_messages
+from utils.recursos import Bot, expand_bible_verse
 
 from .administracao import SacerdocioCog
+from .basic import BasicCog
 
 CYRILLIC_TO_LATIN = str.maketrans({
 	"А": "A", "В": "B", "Е": "E", "К": "K", "М": "M",
@@ -105,14 +105,15 @@ class LogsCog(commands.Cog):
 	def __init__(self, bot: Bot):
 		self.bot = bot
 		self.session: aiohttp.ClientSession | None = None
-		self.forbidden_emojis = "🫃🫄🖕🍆🍑🥵🤬💅🥒🍒🍌"
+		self.forbidden_emojis = "🫃🫄🖕🍆🍑🥵🤬💅🥒🍒🍌💦😏😈🐒🐵🌈🏳️‍🌈🏳️‍⚧️"
 	
 	@app_commands.command(name="badwords", description="Veja a quantidade de palavrões que alguém falou.")
 	async def badwords_count(self, interaction: discord.Interaction, member: discord.User = None):
 		user = member if member else interaction.user
+		mencao = "Você" if interaction.user == user else user.mention
 		member_data = get_member(user.id)
 		final = "ões registrados" if member_data["palavroes"] > 1 else "ão registrado"
-		await interaction.response.send_message(f"{user.mention} tem **{member_data['palavroes']}** palavr{final}.", ephemeral=True)
+		await interaction.response.send_message(f"{mencao} tem **{member_data['palavroes']}** palavr{final}.", ephemeral=True)
 	
 	@commands.Cog.listener()
 	async def on_thread_create(self, thread: discord.Thread):
@@ -172,7 +173,7 @@ class LogsCog(commands.Cog):
 	async def delete_msg_with_forbidden_emojis(self, msg: discord.Message):
 		for emoji in self.forbidden_emojis:
 			if emoji in msg.content:
-				
+				await msg.reply("Há um emoji proibido na sua mensagem.")
 				await msg.delete()
 
 	async def publish_if_news(self, msg: discord.Message):
@@ -431,15 +432,19 @@ class LogsCog(commands.Cog):
 
 	@commands.Cog.listener()
 	async def on_bulk_message_delete(self, messages: list[discord.Message]):
+		if not messages:
+			return
+
 		channel = messages[0].channel
-		transcript = await chat_exporter.raw_export(channel=channel, messages=messages)
-		
-		soup = BeautifulSoup(transcript, "html.parser")
-		_personalize_transcript(soup, channel, len(messages))
-		transcript_html = str(soup)
+		transcript_html = export_messages(
+			channel,
+			messages,
+			export_type="bulk",
+			title=f"Mensagens excluídas de #{channel.name}",
+		)
 
 		file = discord.File(
-			io.BytesIO(transcript_html.encode()),
+			io.BytesIO(transcript_html.encode("utf-8")),
 			filename=f"bulk-{messages[0].id}.html",
 		)
 
@@ -601,7 +606,7 @@ class LogsCog(commands.Cog):
 
 		container.add_item(
 			ui.MediaGallery(
-				discord.MediaGalleryItem("https://media.discordapp.net/attachments/955972869505024020/1325490299874836510/booster.gif")
+				discord.MediaGalleryItem("https://media.discordapp.net/attachments/1430680590218432663/1568424114002329640/booster.gif?ex=6aefc448&is=6aee72c8&hm=7b7e516c253bf579dcf282606b7d337b14a4a386e4dfc1429e9685a629277bf2&=")
 			)
 		)
 
@@ -652,6 +657,10 @@ class LogsCog(commands.Cog):
 	async def on_member_update(self, before: discord.Member, after: discord.Member):
 		await self.verificar_timeout(before, after)
 		await self.verificar_cargos(before, after)
+		if before.roles != after.roles:
+			basic_cog = self.bot.get_cog("BasicCog")
+			if isinstance(basic_cog, BasicCog):
+				await basic_cog.sync_vip_role(after)
 
 	async def cog_load(self):
 		self.session = aiohttp.ClientSession()

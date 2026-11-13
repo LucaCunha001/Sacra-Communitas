@@ -1,17 +1,16 @@
-import chat_exporter
 import datetime
 import discord
 import io
 import unicodedata
 
-from bs4 import BeautifulSoup
 from discord import ui
 from discord import app_commands
 
 from typing import Union
 
+from utils.exporter import export_messages
 from utils.data import get_config
-from utils.recursos import Bot, _personalize_transcript
+from utils.recursos import Bot
 
 class AprovarIntencao(discord.ui.View):
 	def __init__(self):
@@ -488,8 +487,7 @@ class TicketView(ui.LayoutView):
 
 	async def fechar_ticket(self, channel: discord.TextChannel, staff: discord.User):
 		ticket_owner = self._get_ticket_owner(channel)
-		mensagens = await self._count_messages(channel)
-		transcript_html = await self._generate_transcript(channel, mensagens)
+		transcript_html = await self._generate_transcript(channel)
 		await self._send_transcripts(ticket_owner, transcript_html, channel, staff)
 		await channel.delete()
 
@@ -534,23 +532,12 @@ class TicketView(ui.LayoutView):
 		view.add_item(container)
 		return view
 
-	async def _count_messages(self, channel: discord.TextChannel) -> int:
-		return len([msg async for msg in channel.history(limit=None)])
-
-	async def _generate_transcript(
-		self, channel: discord.TextChannel, mensagens: int
-	) -> str:
-		msg_count = len([msg async for msg in channel.history(limit=None)])
-		transcript = await chat_exporter.export(
-			channel,
-			limit=msg_count,
-			tz_info="America/Sao_Paulo",
-			military_time=True,
-			bot=self.bot,
-		)
-		soup = BeautifulSoup(transcript, "html.parser")
-		_personalize_transcript(soup, channel, mensagens)
-		return str(soup)
+	async def _generate_transcript(self, channel: discord.TextChannel) -> str:
+		messages = [
+			message
+			async for message in channel.history(limit=None, oldest_first=True)
+		]
+		return export_messages(channel, messages)
 
 	async def _send_transcripts(
 		self,

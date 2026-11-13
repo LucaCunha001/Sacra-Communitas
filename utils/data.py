@@ -94,6 +94,7 @@ class MembrosJson(TypedDict):
 	warns: list[WarnsJson]
 	ja_boostou: bool
 	palavroes: int
+	cargo_vip: int | None
 
 def get_connection() -> sqlite3.Connection:
 	conn = sqlite3.connect("database.db")
@@ -127,7 +128,8 @@ def get_members() -> dict[str, MembrosJson]:
 			membros[str(row["member_id"])] = {
 				"warns": json.loads(warns),
 				"ja_boostou": bool(row["ja_boostou"] if row["ja_boostou"] else 0),
-				"palavroes": int(row["palavroes"] if row["palavroes"] else 0)
+				"palavroes": int(row["palavroes"] if row["palavroes"] else 0),
+				"cargo_vip": row["cargo_vip"]
 			}
 		return membros
 	finally:
@@ -141,7 +143,7 @@ def get_member(member_id: int) -> MembrosJson:
 		cursor.execute("SELECT * FROM membros WHERE member_id = ?", (member_id,))
 		row = cursor.fetchone()
 		if not row:
-			return {"warns": [], "ja_boostou": False, "palavroes": 0}
+			return {"warns": [], "ja_boostou": False, "palavroes": 0, "cargo_vip": None}
 		
 		warns = row["warns"]
 		if warns is None:
@@ -149,7 +151,8 @@ def get_member(member_id: int) -> MembrosJson:
 		return {
 			"warns": json.loads(warns),
 			"ja_boostou": bool(row["ja_boostou"] if row["ja_boostou"] else 0),
-			"palavroes": int(row["palavroes"] if row["palavroes"] else 0)
+			"palavroes": int(row["palavroes"] if row["palavroes"] else 0),
+			"cargo_vip": row["cargo_vip"]
 		}
 	finally:
 		cursor.close()
@@ -162,15 +165,17 @@ def save_member(member_id: int, obj: MembrosJson) -> None:
 		warns_json = json.dumps(obj.get("warns", []))
 		ja_boostou = int(obj.get("ja_boostou", False))
 		palavroes = int(obj.get("palavroes", 0))
+		cargo_vip = obj.get("cargo_vip")
 		
 		cursor.execute("""
-			INSERT INTO membros (member_id, warns, ja_boostou, palavroes)
-			VALUES (?, ?, ?, ?)
+			INSERT INTO membros (member_id, warns, ja_boostou, palavroes, cargo_vip)
+			VALUES (?, ?, ?, ?, ?)
 			ON CONFLICT(member_id) DO UPDATE SET
 				warns=excluded.warns,
 				ja_boostou=excluded.ja_boostou,
-				palavroes=excluded.palavroes
-		""", (member_id, warns_json, ja_boostou, palavroes))
+				palavroes=excluded.palavroes,
+				cargo_vip=excluded.cargo_vip
+		""", (member_id, warns_json, ja_boostou, palavroes, cargo_vip))
 		conn.commit()
 	finally:
 		cursor.close()
@@ -197,9 +202,15 @@ def create_tables() -> None:
 			member_id BIGINT PRIMARY KEY,
 			warns JSON,
 			ja_boostou BOOLEAN DEFAULT FALSE,
-			palavroes INT DEFAULT 0
+			palavroes INT DEFAULT 0,
+			cargo_vip BIGINT NULL
 		)
 	""")
+
+	cursor.execute("PRAGMA table_info(membros)")
+	colunas_membros = {row["name"] for row in cursor.fetchall()}
+	if "cargo_vip" not in colunas_membros:
+		cursor.execute("ALTER TABLE membros ADD COLUMN cargo_vip BIGINT NULL")
 
 	cursor.execute("""
 		CREATE TABLE IF NOT EXISTS vatican_news_config (

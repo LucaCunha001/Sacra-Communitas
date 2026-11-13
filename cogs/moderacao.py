@@ -17,10 +17,6 @@ class ModeracaoCog(commands.Cog):
 		description="Comandos relacionados à Moderação",
 	)
 
-	# ============================================================
-	# HIERARQUIA
-	# ============================================================
-
 	def get_roles(self, guild: discord.Guild) -> dict[str, discord.Role]:
 		config = self.bot.config["cargos"].get("moderativos", {})
 
@@ -58,13 +54,11 @@ class ModeracaoCog(commands.Cog):
 		interaction: discord.Interaction,
 		membro: discord.Member,
 	) -> bool:
-		# O dono sempre pode administrar.
 		if interaction.user.id == interaction.guild.owner_id:
 			return True
 
 		roles = self.get_roles(interaction.guild)
 
-		# Somente Comandante e Tenente podem alterar a estrutura.
 		cargos_autorizados = {
 			roles[nome].id
 			for nome in ("Comandante", "Tenente")
@@ -85,7 +79,6 @@ class ModeracaoCog(commands.Cog):
 		ator = self.get_rank(interaction.user, interaction.guild)
 		alvo = self.get_rank(membro, interaction.guild)
 
-		# Se o alvo possui cargo hierárquico, ele deve estar abaixo do ator.
 		if ator and alvo and alvo.position >= ator.position:
 			await interaction.response.send_message(
 				"Você não pode alterar alguém com cargo moderativo "
@@ -96,10 +89,6 @@ class ModeracaoCog(commands.Cog):
 
 		return True
 
-	# ============================================================
-	# ALTERAÇÃO DE CARGOS
-	# ============================================================
-
 	async def change_roles(
 		self,
 		interaction: discord.Interaction,
@@ -108,6 +97,8 @@ class ModeracaoCog(commands.Cog):
 		titulo: str,
 		motivo: str | None = None,
 	):
+		await interaction.response.defer(ephemeral=True)
+
 		roles = self.get_roles(interaction.guild)
 
 		cargos_estrutura = {
@@ -115,15 +106,12 @@ class ModeracaoCog(commands.Cog):
 			for role in roles.values()
 		}
 
-		# Mantém absolutamente todos os cargos que não pertencem
-		# à estrutura da Moderação.
 		cargos_membro = [
 			role
 			for role in membro.roles
 			if role.id not in cargos_estrutura
 		]
 
-		# Militar é um cargo auxiliar/base e não conta como posto.
 		cargo_militar = roles.get("Militar")
 
 		if cargo_militar is not None:
@@ -143,19 +131,19 @@ class ModeracaoCog(commands.Cog):
 			)
 
 		except discord.Forbidden:
-			return await interaction.response.send_message(
+			return await interaction.followup.send(
 				"Não consegui alterar os cargos. "
 				"Verifique as permissões e a hierarquia do bot.",
 				ephemeral=True,
 			)
 
 		except discord.HTTPException:
-			return await interaction.response.send_message(
+			return await interaction.followup.send(
 				"O Discord recusou a alteração dos cargos.",
 				ephemeral=True,
 			)
 
-		await interaction.response.send_message(
+		await interaction.followup.send(
 			"Cargo alterado com sucesso!",
 			ephemeral=True,
 		)
@@ -167,10 +155,6 @@ class ModeracaoCog(commands.Cog):
 			titulo=titulo,
 			motivo=motivo,
 		)
-
-	# ============================================================
-	# REGISTRO DA ALTERAÇÃO
-	# ============================================================
 
 	async def send_appointment_log(
 		self,
@@ -195,6 +179,9 @@ class ModeracaoCog(commands.Cog):
 			)
 
 		elif titulo.startswith("Admissão"):
+			conscrito_id = self.bot.config["cargos"].get("membros", {}).get("Conscrito")
+			cargo_conscrito = canal.guild.get_role(conscrito_id)
+
 			titulo = "Admissão à Moderação"
 			mensagem = (
 				f"{membro.mention} passa a integrar a estrutura "
@@ -202,6 +189,7 @@ class ModeracaoCog(commands.Cog):
 				"Confiamos a ele o dever de auxiliar na preservação "
 				"da ordem, da convivência e das regras da comunidade."
 			)
+			await membro.remove_roles(cargo_conscrito)
 
 		elif titulo.startswith("Promoção"):
 			titulo = "Promoção na Moderação"
@@ -254,10 +242,6 @@ class ModeracaoCog(commands.Cog):
 			await canal.send(view=view)
 		except discord.Forbidden:
 			pass
-
-	# ============================================================
-	# INFORMAÇÕES
-	# ============================================================
 
 	@moderacao_group.command(
 		name="info",
@@ -312,10 +296,6 @@ class ModeracaoCog(commands.Cog):
 		await interaction.response.send_message(
 			view=view
 		)
-
-	# ============================================================
-	# EFETIVO
-	# ============================================================
 
 	@moderacao_group.command(
 		name="efetivo",
@@ -398,10 +378,6 @@ class ModeracaoCog(commands.Cog):
 			ephemeral=True,
 		)
 
-	# ============================================================
-	# ADMISSÃO
-	# ============================================================
-
 	@moderacao_group.command(
 		name="nomear",
 		description="Admite um membro como Soldado da Moderação.",
@@ -442,10 +418,6 @@ class ModeracaoCog(commands.Cog):
 			cargo_novo=cargo,
 			titulo="Admissão à Moderação",
 		)
-
-	# ============================================================
-	# PROMOÇÃO / REBAIXAMENTO
-	# ============================================================
 
 	async def set_rank(
 		self,
@@ -600,10 +572,6 @@ class ModeracaoCog(commands.Cog):
 			promocao=False,
 			motivo=motivo,
 		)
-
-	# ============================================================
-	# DISPENSA
-	# ============================================================
 
 	@moderacao_group.command(
 		name="dispensar",

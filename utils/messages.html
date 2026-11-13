@@ -1,0 +1,3242 @@
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<title>Exportação de mensagens</title>
+		<style>
+			:root {
+				font-family:
+					"gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial,
+					sans-serif;
+				color: var(--text);
+				background: var(--background);
+				font-synthesis: none;
+				text-rendering: optimizeLegibility;
+				--background: #09080d;
+				--surface: #100e15;
+				--surface-raised: #17131e;
+				--surface-highest: #211b2b;
+				--text: #dcdee5;
+				--text-strong: #ffffff;
+				--text-subtle: #c5c6ca;
+				--muted: #9699a6;
+				--line: rgb(174 180 198 / 14%);
+				--surface-hover: rgb(174 180 198 / 7%);
+				--accent: #8d79bd;
+				--sacra-purple: #75609c;
+				--sacra-purple-light: #a995d0;
+				--sacra-gold: #c9ad79;
+				--link: #8ab4ff;
+				--mention-background: rgb(88 101 242 / 23.9%);
+				--mention-foreground: #cdd7ff;
+				--danger: #da3e44;
+				--positive: #3d9e60;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				min-width: 320px;
+				min-height: 100vh;
+				margin: 0;
+				background: var(--background);
+			}
+
+			.transcript {
+				display: flex;
+				width: 100%;
+				min-height: 100vh;
+				flex-direction: column;
+				background: transparent;
+			}
+
+			.title-bar {
+				position: sticky;
+				z-index: 1;
+				top: 0;
+				display: grid;
+				gap: 12px;
+				padding: 14px clamp(16px, 4vw, 48px) 12px;
+				border-bottom: 1px solid var(--line);
+				background: rgb(9 8 13 / 94%);
+				backdrop-filter: blur(16px);
+			}
+
+			.title-heading {
+				display: flex;
+				min-width: 0;
+				align-items: center;
+				gap: 10px;
+			}
+
+			.title-icon {
+				display: grid;
+				width: 34px;
+				height: 34px;
+				flex: 0 0 34px;
+				place-items: center;
+				border: 1px solid var(--line);
+				border-radius: 11px;
+				background: var(--surface-raised);
+				color: var(--sacra-gold);
+				font-size: 21px;
+				font-weight: 600;
+			}
+
+			.title-copy {
+				display: flex;
+				min-width: 0;
+				align-items: baseline;
+				flex-wrap: wrap;
+				gap: 4px 12px;
+			}
+
+			#export-title {
+				overflow: hidden;
+				color: var(--text-strong);
+				font-size: 16px;
+				font-weight: 650;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			#export-subtitle {
+				overflow: hidden;
+				color: var(--muted);
+				font-size: 12px;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.message-tools {
+				display: flex;
+				min-width: 0;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.search-box,
+			.filter-box {
+				display: flex;
+				min-height: 38px;
+				align-items: center;
+				gap: 8px;
+				padding: 0 11px;
+				border: 1px solid var(--line);
+				border-radius: 10px;
+				background: var(--surface);
+				color: var(--muted);
+			}
+
+			.search-box {
+				width: min(100%, 360px);
+				flex: 0 1 360px;
+			}
+
+			.search-icon {
+				font-size: 19px;
+				line-height: 1;
+			}
+
+			#message-search,
+			#author-filter {
+				min-width: 0;
+				border: 0;
+				outline: 0;
+				background: transparent;
+				color: var(--text);
+				font: inherit;
+				font-size: 13px;
+			}
+
+			#message-search {
+				width: 100%;
+			}
+
+			#message-search::-webkit-search-cancel-button {
+				display: none;
+			}
+
+			#message-search::placeholder {
+				color: var(--muted);
+			}
+
+			#author-filter {
+				width: 100%;
+				cursor: pointer;
+			}
+
+			#author-filter option {
+				background: var(--surface-raised);
+				color: var(--text);
+			}
+
+			.search-box:focus-within,
+			.filter-box:focus-within {
+				border-color: var(--accent);
+				box-shadow: 0 0 0 3px color-mix(in srgb, var(--sacra-purple) 22%, transparent);
+			}
+
+			#clear-search,
+			#jump-latest {
+				display: inline-flex;
+				min-height: 36px;
+				align-items: center;
+				justify-content: center;
+				gap: 6px;
+				border: 1px solid var(--line);
+				border-radius: 9px;
+				background: var(--surface-raised);
+				color: var(--text);
+				font: inherit;
+				font-size: 13px;
+				cursor: pointer;
+			}
+
+			#clear-search {
+				width: 26px;
+				min-height: 26px;
+				padding: 0;
+				border: 0;
+				background: transparent;
+				font-size: 18px;
+			}
+
+			#jump-latest {
+				padding: 0 12px;
+			}
+
+			#clear-search:hover,
+			#jump-latest:not(:disabled):hover {
+				border-color: color-mix(in srgb, var(--sacra-purple-light) 55%, transparent);
+				background: var(--surface-highest);
+			}
+
+			#jump-latest:disabled {
+				color: var(--muted);
+				cursor: not-allowed;
+				opacity: 0.6;
+			}
+
+			#clear-search:focus-visible,
+			#jump-latest:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: 2px;
+			}
+
+			.results-count {
+				margin-left: auto;
+				color: var(--muted);
+				font-size: 12px;
+				white-space: nowrap;
+			}
+
+			.ticket-overview {
+				position: relative;
+				width: min(calc(100% - 40px), 1080px);
+				margin: 22px auto 0;
+				overflow: hidden;
+				border: 1px solid color-mix(in srgb, var(--sacra-purple) 48%, var(--line));
+				border-radius: 14px;
+				background: linear-gradient(135deg, rgb(39 30 54 / 74%), rgb(17 14 22 / 96%) 62%);
+				box-shadow: 0 12px 36px rgb(0 0 0 / 20%);
+			}
+
+			.ticket-overview[hidden] {
+				display: none;
+			}
+
+			.ticket-overview::before {
+				position: absolute;
+				inset: 0 auto 0 0;
+				width: 3px;
+				background: linear-gradient(180deg, var(--sacra-gold), var(--sacra-purple-light));
+				content: "";
+			}
+
+			.ticket-overview-heading {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				padding: 18px 20px 14px;
+			}
+
+			.ticket-emblem {
+				display: grid;
+				width: 42px;
+				height: 42px;
+				flex: 0 0 42px;
+				place-items: center;
+				border: 1px solid rgb(201 173 121 / 36%);
+				border-radius: 12px;
+				background: rgb(201 173 121 / 8%);
+				color: var(--sacra-gold);
+				font-size: 25px;
+				line-height: 1;
+			}
+
+			.ticket-heading-copy {
+				min-width: 0;
+				flex: 1;
+			}
+
+			.ticket-kicker {
+				margin-bottom: 4px;
+				color: var(--sacra-gold);
+				font-size: 10px;
+				font-weight: 800;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+			}
+
+			.ticket-heading-title {
+				overflow: hidden;
+				color: var(--text-strong);
+				font-size: 18px;
+				font-weight: 700;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.ticket-status {
+				display: inline-flex;
+				min-height: 25px;
+				align-items: center;
+				gap: 6px;
+				padding: 3px 9px;
+				border: 1px solid var(--line);
+				border-radius: 999px;
+				background: rgb(255 255 255 / 3%);
+				color: var(--text-subtle);
+				font-size: 11px;
+				font-weight: 700;
+				white-space: nowrap;
+			}
+
+			.ticket-status::before {
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: currentColor;
+				content: "";
+			}
+
+			.ticket-status[data-status="open"],
+			.ticket-status[data-status="in_progress"] {
+				border-color: rgb(61 158 96 / 35%);
+				background: rgb(61 158 96 / 10%);
+				color: #75c995;
+			}
+
+			.ticket-status[data-status="closed"] {
+				border-color: rgb(201 173 121 / 34%);
+				background: rgb(201 173 121 / 9%);
+				color: var(--sacra-gold);
+			}
+
+			.ticket-status[data-status="pending"] {
+				border-color: rgb(218 160 75 / 35%);
+				background: rgb(218 160 75 / 9%);
+				color: #e3b56b;
+			}
+
+			.ticket-meta {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+				gap: 12px 18px;
+				padding: 0 20px 17px 74px;
+			}
+
+			.ticket-meta-item {
+				min-width: 0;
+			}
+
+			.ticket-meta-label {
+				margin-bottom: 3px;
+				color: var(--muted);
+				font-size: 10px;
+				font-weight: 700;
+				letter-spacing: 0.07em;
+				text-transform: uppercase;
+			}
+
+			.ticket-meta-value {
+				overflow-wrap: anywhere;
+				color: var(--text);
+				font-size: 12px;
+				font-weight: 550;
+			}
+
+			.ticket-overview-footer {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 10px;
+				padding: 9px 20px;
+				border-top: 1px solid var(--line);
+				color: var(--muted);
+				font-size: 10px;
+			}
+
+			.title-bar.ticket-title-bar .title-icon {
+				border-color: rgb(201 173 121 / 35%);
+				background: rgb(201 173 121 / 8%);
+				color: var(--sacra-gold);
+			}
+
+			.messages {
+				flex: 1;
+				width: min(100%, 1120px);
+				margin: 0 auto;
+				padding: 20px 20px 56px;
+			}
+
+			.date-divider {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin: 18px 0 10px;
+				color: var(--muted);
+				font-size: 12px;
+				font-weight: 600;
+				text-transform: uppercase;
+				white-space: nowrap;
+			}
+
+			.date-divider::before,
+			.date-divider::after {
+				height: 1px;
+				flex: 1;
+				background: var(--line);
+				content: "";
+			}
+
+			.message {
+				position: relative;
+				display: block;
+				padding: 3px 16px;
+				border-radius: 9px;
+				transition: background-color 120ms ease;
+			}
+
+			.message-content-row {
+				position: relative;
+				display: flex;
+				min-width: 0;
+				padding-left: 56px;
+			}
+
+			.message.first-in-group {
+				margin-top: 14px;
+			}
+
+			.message:hover {
+				background: var(--surface-hover);
+			}
+
+			.message.first-in-group .compact-time,
+			.message.filter-match .compact-time {
+				display: none;
+			}
+
+			.filter-author {
+				display: none;
+				min-height: 22px;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 2px;
+				color: var(--text-strong);
+				font-size: 14px;
+				font-weight: 500;
+			}
+
+			.filter-author time {
+				color: var(--muted);
+				font-size: 12px;
+				font-weight: 400;
+			}
+
+			.message.filter-match .filter-author {
+				display: flex;
+			}
+
+			.avatar-slot {
+				position: absolute;
+				top: 2px;
+				left: 0;
+				width: 40px;
+				height: 40px;
+			}
+
+			.avatar {
+				display: block;
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				background: var(--surface-raised);
+				object-fit: cover;
+			}
+
+			.message-body {
+				min-width: 0;
+				flex: 1;
+			}
+
+			.message-profile {
+				display: flex;
+				min-height: 22px;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: 5px 7px;
+				margin-bottom: 2px;
+			}
+
+			.bot-tag {
+				display: inline-flex;
+				min-height: 16px;
+				align-items: center;
+				padding: 0 5px;
+				border-radius: 4px;
+				background: #5865f2;
+				color: #ffffff;
+				font-size: 10px;
+				font-weight: 800;
+				letter-spacing: 0.015em;
+				line-height: 16px;
+				text-transform: uppercase;
+				white-space: nowrap;
+				user-select: none;
+			}
+
+			.message-name {
+				color: var(--name-color, var(--text-strong));
+				font-size: 16px;
+				font-weight: 500;
+			}
+
+			.message-name:hover {
+				text-decoration: underline;
+				text-underline-offset: 2px;
+			}
+
+			.message-name.role-gradient {
+				background-image: linear-gradient(
+					90deg,
+					var(--gradient-start),
+					var(--gradient-end),
+					var(--gradient-start)
+				);
+				background-size: 220% 100%;
+				background-clip: text;
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+			}
+
+			.message-name.role-gradient:hover {
+				animation: role-shine 1.4s linear infinite;
+				filter: drop-shadow(
+					0 0 5px
+						color-mix(in srgb, var(--gradient-end) 55%, transparent)
+				);
+				text-decoration-color: var(--gradient-end);
+			}
+
+			@keyframes role-shine {
+				to {
+					background-position: 220% 0;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				.message-name.role-gradient:hover {
+					animation: none;
+				}
+			}
+
+			.message-time,
+			.compact-time {
+				color: var(--muted);
+				font-size: 12px;
+			}
+
+			.compact-time {
+				position: absolute;
+				top: 3px;
+				left: 0;
+				width: 42px;
+				text-align: center;
+				opacity: 0;
+			}
+
+			.message:not(.first-in-group):hover .compact-time {
+				opacity: 1;
+			}
+
+			.component-button {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+				cursor: pointer;
+				text-decoration: none;
+			}
+
+			.message-content {
+				color: var(--text);
+				font-size: 16px;
+				line-height: 1.375;
+				overflow-wrap: anywhere;
+				white-space: pre-wrap;
+			}
+
+			.reply-reference {
+				display: grid;
+				width: 100%;
+				max-width: 100%;
+				grid-template-columns: 0 auto minmax(0, 1fr);
+				grid-template-rows: 20px;
+				align-items: center;
+				column-gap: 4px;
+				margin: 0 0 2px;
+				padding-left: 56px;
+			}
+
+			.reply-spine {
+				position: relative;
+				grid-column: 1;
+				grid-row: 1;
+				width: 24px;
+				padding: 0;
+				border: 0;
+				background: transparent;
+				cursor: default;
+			}
+
+			button.reply-spine,
+			button.reply-preview {
+				cursor: pointer;
+			}
+
+			.reply-spine::before {
+				position: absolute;
+				top: -4px;
+				right: 25px;
+				width: 35px;
+				height: 14px;
+				border-top: 2px solid var(--text-muted, var(--muted));
+				border-left: 2px solid var(--text-muted, var(--muted));
+				border-top-left-radius: 6px;
+				content: "";
+			}
+
+			.reply-spine::after {
+				position: absolute;
+				top: 8px;
+				bottom: 0;
+				right: 25px;
+				border-left: 2px solid var(--text-muted, var(--muted));
+				content: "";
+			}
+
+			.reply-reference:hover .reply-spine::before,
+			.reply-reference:hover .reply-spine::after {
+				border-color: var(--text-subtle);
+			}
+
+			.reply-header {
+				display: flex;
+				min-width: 0;
+				grid-column: 2;
+				grid-row: 1;
+				align-items: center;
+				gap: 4px;
+				overflow: hidden;
+				max-width: 100%;
+				color: var(--muted);
+				font-size: 12px;
+				line-height: 20px;
+				white-space: nowrap;
+			}
+
+			.reply-avatar {
+				width: 20px;
+				height: 20px;
+				flex: 0 0 20px;
+				border-radius: 50%;
+				object-fit: cover;
+			}
+
+			.reply-name {
+				max-width: 200px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			.message-name.reply-name {
+				color: var(--name-color, var(--text-strong));
+				font-size: 12px;
+				font-weight: 500;
+			}
+
+			a.reply-name {
+				text-decoration: none;
+			}
+
+			a.reply-name:hover {
+				text-decoration: underline;
+			}
+
+			.reply-snippet {
+				display: block;
+				min-width: 0;
+				grid-column: 3;
+				grid-row: 1;
+				overflow: hidden;
+				color: var(--text-subtle);
+				font-size: 14px;
+				line-height: 20px;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				text-align: left;
+			}
+
+			button.reply-preview {
+				min-width: 0;
+				padding: 0;
+				border: 0;
+				background: transparent;
+				font: inherit;
+			}
+
+			.reply-preview:hover .reply-snippet {
+				color: var(--text);
+			}
+
+			.reply-reference.unresolved {
+				cursor: default;
+			}
+
+			.message.reply-target-highlight {
+				background: rgb(88 101 242 / 16.1%);
+			}
+
+			.message.reply-target-highlight:hover {
+				background: rgb(88 101 242 / 12.2%);
+			}
+
+			.mention {
+				display: inline;
+				padding: 0 2px;
+				border-radius: 3px;
+				background: var(--mention-background);
+				color: var(--mention-foreground);
+				font-weight: 500;
+				text-decoration: none;
+				white-space: nowrap;
+			}
+
+			a.mention:hover {
+				background: #5865f2;
+				color: #ffffff;
+			}
+
+			.mention:focus-visible,
+			.reply-spine:focus-visible,
+			.reply-preview:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: 2px;
+			}
+
+			.mention-role {
+				font-weight: 500;
+			}
+
+			.mention-role-colored {
+				background: color-mix(
+					in srgb,
+					var(--mention-role-color) 20%,
+					transparent
+				);
+				color: var(--mention-role-color);
+			}
+
+			.discord-code {
+				padding: 1px 4px;
+				border-radius: 3px;
+				background: var(--surface);
+				font-family: Consolas, "Courier New", monospace;
+				font-size: 0.9em;
+			}
+
+			.discord-emoji {
+				display: inline-block;
+				width: 1.25em;
+				height: 1.25em;
+				margin: 0 0.04em;
+				vertical-align: -0.25em;
+				object-fit: contain;
+			}
+
+			.discord-heading {
+				display: block;
+				margin: 0;
+				color: var(--text-strong);
+				font-weight: 700;
+				line-height: 1.25;
+			}
+
+			.discord-heading-1 {
+				font-size: 1.35em;
+			}
+
+			.discord-heading-2 {
+				font-size: 1.2em;
+			}
+
+			.discord-heading-3 {
+				font-size: 1.08em;
+			}
+
+			.discord-subtext {
+				display: block;
+				color: var(--muted);
+				font-size: 0.85em;
+				line-height: 1.35;
+			}
+
+			.discord-list {
+				margin: 0;
+				padding-left: 1.5em;
+			}
+
+			.discord-list li {
+				padding-left: 0.1em;
+			}
+
+			.message.edited .message-content::after {
+				margin-left: 4px;
+				color: var(--muted);
+				font-size: 10px;
+				content: "(editada)";
+			}
+
+			.deleted-label {
+				display: inline-flex;
+				align-items: center;
+				gap: 4px;
+				margin: 0 0 4px;
+				color: var(--danger);
+				font-size: 12px;
+			}
+
+			.reactions {
+				display: inline-flex;
+				align-items: center;
+				flex-wrap: wrap;
+				gap: 4px;
+			}
+
+			.member-tag {
+				display: inline-flex;
+				min-height: 20px;
+				align-items: center;
+				gap: 4px;
+				padding: 2px 6px;
+				border: 1px solid
+					color-mix(
+						in srgb,
+						var(--tag-color, var(--accent)) 45%,
+						transparent
+					);
+				border-radius: 6px;
+				background: color-mix(
+					in srgb,
+					var(--tag-color, var(--accent)) 24%,
+					#000
+				);
+				color: var(--text-strong);
+				font-size: 11px;
+				font-weight: 700;
+				line-height: 14px;
+				white-space: nowrap;
+			}
+
+			.member-tag-icon,
+			.role-icon {
+				display: block;
+				width: 16px;
+				height: 16px;
+				flex: 0 0 16px;
+				object-fit: contain;
+			}
+
+			.role-icon {
+				border-radius: 3px;
+			}
+
+			.role-icon-emoji {
+				display: inline-flex;
+				width: 16px;
+				height: 16px;
+				flex: 0 0 16px;
+				align-items: center;
+				justify-content: center;
+				font-size: 14px;
+				line-height: 1;
+			}
+
+			.role-icon-emoji .discord-emoji {
+				width: 16px;
+				height: 16px;
+				margin: 0;
+				vertical-align: middle;
+			}
+
+			.reactions {
+				display: flex;
+				margin-top: 6px;
+			}
+
+			.reaction {
+				display: inline-flex;
+				min-height: 32px;
+				align-items: center;
+				padding: 2px 8px;
+				border: 1px solid var(--line);
+				border-radius: 10px;
+				background: var(--surface-raised);
+				color: var(--text);
+				font-size: 13px;
+			}
+
+			.reaction.me {
+				border-color: rgb(88 101 242 / 65%);
+				background: rgb(88 101 242 / 20%);
+				color: var(--text-strong);
+			}
+
+			.embed {
+				position: relative;
+				display: grid;
+				width: min(100%, 520px);
+				grid-template-columns: 4px minmax(0, 1fr);
+				margin-top: 8px;
+				overflow: hidden;
+				border-radius: 4px;
+				background: var(--surface);
+			}
+
+			.embed-accent {
+				background: var(--embed-color, var(--line));
+			}
+
+			.embed-inner {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) auto;
+				gap: 12px;
+				padding: 12px 16px 16px;
+			}
+
+			.embed-main {
+				min-width: 0;
+			}
+
+			.embed-author,
+			.embed-footer {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				color: var(--text);
+				font-size: 12px;
+				font-weight: 600;
+			}
+
+			.embed-author {
+				margin-bottom: 8px;
+			}
+
+			.embed-author img,
+			.embed-footer img {
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				object-fit: cover;
+			}
+
+			.embed-title {
+				margin: 0 0 6px;
+				color: var(--link);
+				font-size: 16px;
+				font-weight: 600;
+			}
+
+			.embed-title a,
+			.embed-description a {
+				color: inherit;
+				text-decoration: none;
+			}
+
+			.embed-title a:hover,
+			.embed-description a:hover {
+				text-decoration: underline;
+			}
+
+			.embed-description {
+				color: var(--text);
+				font-size: 14px;
+				line-height: 1.35;
+				overflow-wrap: anywhere;
+				white-space: pre-wrap;
+			}
+
+			.embed-fields {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 8px;
+				margin-top: 10px;
+			}
+
+			.embed-field.inline {
+				grid-column: span 1;
+			}
+
+			.embed-field:not(.inline) {
+				grid-column: 1 / -1;
+			}
+
+			.embed-field-name {
+				margin-bottom: 3px;
+				color: var(--text-strong);
+				font-size: 13px;
+				font-weight: 700;
+			}
+
+			.embed-field-value {
+				color: var(--text);
+				font-size: 13px;
+				line-height: 1.3;
+				overflow-wrap: anywhere;
+				white-space: pre-wrap;
+			}
+
+			.embed-thumbnail {
+				width: 80px;
+				height: 80px;
+				border-radius: 4px;
+				object-fit: cover;
+			}
+
+			.embed-image {
+				display: block;
+				width: 100%;
+				max-height: 300px;
+				margin-top: 12px;
+				border-radius: 4px;
+				object-fit: contain;
+				object-position: left;
+			}
+
+			.embed-footer {
+				margin-top: 12px;
+				color: var(--muted);
+				font-weight: 400;
+			}
+
+			.embed-timestamp {
+				color: var(--muted);
+				font-size: 11px;
+				font-weight: 400;
+			}
+
+			.components {
+				display: grid;
+				width: min(100%, 520px);
+				gap: 8px;
+				margin-top: 8px;
+			}
+
+			.component-container {
+				display: grid;
+				grid-template-columns: 4px minmax(0, 1fr);
+				overflow: hidden;
+				border-radius: 4px;
+				background: var(--surface);
+			}
+
+			.component-container-content {
+				display: grid;
+				gap: 8px;
+				padding: 12px;
+			}
+
+			.component-section {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+			}
+
+			.component-text {
+				color: var(--text);
+				font-size: 14px;
+				line-height: 1.35;
+				overflow-wrap: anywhere;
+				white-space: pre-wrap;
+			}
+
+			.component-separator {
+				height: 1px;
+				margin: 4px 0;
+				border: 0;
+				background: var(--line);
+			}
+
+			.component-media-gallery,
+			.component-files {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.component-media {
+				max-width: min(100%, 280px);
+				max-height: 220px;
+				border-radius: 4px;
+				object-fit: contain;
+			}
+
+			.attachments {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-top: 8px;
+			}
+
+			.attachment {
+				max-width: min(100%, 420px);
+				padding: 9px 11px;
+				border: 1px solid var(--line);
+				border-radius: 5px;
+				background: var(--surface);
+				color: var(--link);
+				font-size: 13px;
+				text-decoration: none;
+				overflow-wrap: anywhere;
+			}
+
+			.attachment img {
+				display: block;
+				max-width: 100%;
+				max-height: 320px;
+				margin-bottom: 6px;
+				border-radius: 4px;
+				object-fit: contain;
+			}
+
+			.component-file {
+				padding: 8px 10px;
+				border-radius: 4px;
+				background: var(--surface-raised);
+				color: var(--link);
+				font-size: 13px;
+				text-decoration: none;
+			}
+
+			.component-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.component-button,
+			.component-select {
+				min-height: 32px;
+				padding: 6px 12px;
+				border: 0;
+				border-radius: 4px;
+				background: var(--surface-raised);
+				color: var(--text);
+				font: inherit;
+				font-size: 13px;
+				opacity: 1;
+			}
+
+			.component-button.primary {
+				background: var(--accent);
+			}
+
+			.component-button.success {
+				background: var(--positive);
+			}
+
+			.component-button.danger {
+				background: var(--danger);
+			}
+
+			.component-button:disabled {
+				background: #09090b;
+				color: #777982;
+				filter: brightness(0.82);
+			}
+
+			.component-button.primary:disabled {
+				background: #252a69;
+			}
+
+			.component-button.success:disabled {
+				background: #1d4b30;
+			}
+
+			.component-button.danger:disabled {
+				background: #5a2024;
+			}
+
+			.component-button.link:disabled {
+				background: #09090b;
+				color: #777982;
+			}
+
+			.component-button:not(:disabled):hover {
+				filter: brightness(1.12);
+			}
+
+			.reply-reference:focus-visible,
+			.component-button:focus-visible,
+			.component-button.link:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: 2px;
+			}
+
+			.component-button.link {
+				background: transparent;
+				color: var(--muted);
+				justify-content: space-between;
+				text-decoration: none;
+			}
+
+			.component-button.link:hover {
+				background: var(--surface-hover);
+				color: var(--text);
+			}
+
+			.component-button.link:disabled:hover {
+				background: #09090b;
+				color: #777982;
+			}
+
+			.component-launch-icon {
+				width: 16px;
+				height: 16px;
+				flex: 0 0 16px;
+			}
+
+			.component-select {
+				width: min(100%, 320px);
+				padding: 8px 10px;
+				border: 1px solid var(--line);
+				border-radius: 4px;
+				background: var(--surface-raised);
+				color: var(--text);
+				font-size: 13px;
+				text-align: left;
+			}
+
+			.component-options {
+				margin: 8px 0 0;
+				padding-left: 18px;
+				color: var(--muted);
+			}
+			.component-options li {
+				margin: 4px 0;
+			}
+			.component-options small {
+				display: block;
+			}
+			.component-accessory {
+				width: 44px;
+				height: 44px;
+				flex: 0 0 44px;
+				border-radius: 4px;
+				object-fit: cover;
+			}
+
+			.data-warning {
+				margin: 16px;
+				padding: 10px 12px;
+				border: 1px solid var(--danger);
+				border-radius: 4px;
+				background: color-mix(in srgb, var(--danger) 14%, #000);
+				color: #f2b8bb;
+				font-size: 13px;
+			}
+
+			.empty-state {
+				margin: 40px 24px;
+				color: var(--muted);
+				font-size: 14px;
+				text-align: center;
+			}
+
+			.message[hidden],
+			.date-divider[hidden],
+			.empty-state[hidden],
+			#clear-search[hidden] {
+				display: none;
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				.message {
+					transition: none;
+				}
+			}
+
+			@media (max-width: 600px) {
+				.title-bar {
+					gap: 10px;
+					padding: 12px 14px;
+				}
+
+				.message-tools {
+					display: grid;
+					grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+				}
+
+				.search-box {
+					width: 100%;
+					grid-column: 1 / -1;
+				}
+
+				.results-count {
+					margin-left: 0;
+					padding-left: 2px;
+				}
+
+				#jump-latest {
+					grid-column: 1 / -1;
+				}
+
+				.messages {
+					padding: 14px 8px 40px;
+				}
+
+				.message {
+					padding-right: 8px;
+					padding-left: 8px;
+				}
+
+				.avatar-slot {
+					left: 0;
+				}
+
+				.message-content-row,
+				.reply-reference {
+					padding-left: 48px;
+				}
+
+				.date-divider {
+					margin-right: 8px;
+					margin-left: 8px;
+				}
+
+				.embed-inner {
+					grid-template-columns: minmax(0, 1fr);
+				}
+
+				.embed-thumbnail {
+					grid-row: 1;
+				}
+
+				.embed-fields {
+					grid-template-columns: minmax(0, 1fr);
+				}
+
+				.embed-field.inline,
+				.embed-field:not(.inline) {
+					grid-column: 1;
+				}
+			}
+			@media (max-width: 560px) {
+				.ticket-overview {
+					width: calc(100% - 24px);
+					margin-top: 14px;
+				}
+
+				.ticket-overview-heading {
+					gap: 9px;
+					padding: 14px 14px 12px;
+				}
+
+				.ticket-emblem {
+					width: 36px;
+					height: 36px;
+					flex-basis: 36px;
+				}
+
+				.ticket-heading-title {
+					font-size: 16px;
+				}
+
+				.ticket-meta {
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+					gap: 10px 12px;
+					padding: 0 14px 14px 59px;
+				}
+
+				.ticket-overview-footer {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+			}
+
+		</style>
+	</head>
+	<body>
+		<main class="transcript">
+			<header class="title-bar">
+				<div class="title-heading">
+					<div class="title-icon" id="title-icon" aria-hidden="true">
+						#
+					</div>
+					<div class="title-copy">
+						<div id="export-title"></div>
+						<div id="export-subtitle"></div>
+					</div>
+				</div>
+				<div class="message-tools" aria-label="Ferramentas da conversa">
+					<div class="search-box">
+						<span class="search-icon" aria-hidden="true">⌕</span>
+						<input
+							id="message-search"
+							type="search"
+							placeholder="Buscar nas mensagens..."
+							aria-label="Buscar nas mensagens"
+							autocomplete="off"
+							enterkeyhint="search"
+						/>
+						<button
+							id="clear-search"
+							type="button"
+							aria-label="Limpar busca"
+							title="Limpar busca"
+							hidden
+						>
+							×
+						</button>
+					</div>
+					<label class="filter-box">
+						<select
+							id="author-filter"
+							aria-label="Filtrar por autor"
+						>
+							<option value="">Todos os autores</option>
+						</select>
+					</label>
+					<span
+						class="results-count"
+						id="results-count"
+						aria-live="polite"
+					></span>
+					<button id="jump-latest" type="button">
+						↓ <span>Mais recente</span>
+					</button>
+				</div>
+			</header>
+			<aside
+				class="ticket-overview"
+				id="ticket-overview"
+				aria-label="Informações do atendimento"
+				hidden
+			></aside>
+			<section
+				class="messages"
+				id="messages"
+				aria-label="Mensagens exportadas"
+			></section>
+		</main>
+
+		<script id="export-info-data" type="application/json">
+			{
+				"type": "channel",
+				"channelName": "geral",
+				"userName": ""
+			}
+		</script>
+		<script id="users-data" type="application/json">
+			{
+				"1272282414252691517": {
+					"name": "Luca 🇻🇦",
+					"avatar": "https://cdn.discordapp.com/avatars/1272282414252691517/5ede1c14b731d8c8ac6de40401b8b025.png?size=128",
+					"serverTag": {
+						"label": "CATH",
+						"iconUrl": "https://cdn.discordapp.com/guild-tag-badges/1429152785252876328/34095cf9ab0804d0da5dc08f07710d07.png?size=64",
+						"color": "#7661a8"
+					},
+					"role": {
+						"name": "Papa",
+						"color": "#d3b173",
+						"iconUrl": "https://cdn.discordapp.com/emojis/1430289460813238363.webp?size=2048"
+					}
+				},
+				"100000000000000001": {
+					"name": "Mariana",
+					"avatar": "",
+					"serverTag": {
+						"label": "CATH",
+						"iconUrl": "https://cdn.discordapp.com/guild-tag-badges/1429152785252876328/34095cf9ab0804d0da5dc08f07710d07.png?size=64",
+						"color": "#7661a8"
+					},
+					"role": {
+						"name": "Membro",
+						"gradient": ["#df9bce", "#9aa7ee"],
+						"iconUrl": ""
+					}
+				}
+			}
+		</script>
+		<script id="messages-data" type="application/json">
+			[
+				{
+					"id": "1569641264578560001",
+					"user": "1272282414252691517",
+					"timestamp": "2026-11-10T09:14:00-03:00",
+					"content": "Bom dia! Seguem os detalhes do encontro de hoje.",
+					"reactions": [{ "emoji": "🙏", "count": 2 }],
+					"embeds": [
+						{
+							"color": "#7661a8",
+							"author": {
+								"name": "Sacra Communitas",
+								"iconUrl": ""
+							},
+							"title": "Encontro da comunidade",
+							"url": "https://example.com/encontro",
+							"description": "Nos reunimos hoje às **19h** para o encontro semanal.\nTodos são bem-vindos!",
+							"fields": [
+								{
+									"name": "Horário",
+									"value": "19h (horário de Brasília)",
+									"inline": true
+								},
+								{
+									"name": "Local",
+									"value": "Sala de conversa",
+									"inline": true
+								}
+							],
+							"footer": {
+								"text": "Sacra Communitas",
+								"iconUrl": ""
+							},
+							"timestamp": "2026-11-10T19:00:00-03:00"
+						}
+					]
+				},
+				{
+					"id": "1569641767895040002",
+					"user": "100000000000000001",
+					"timestamp": "2026-11-10T09:16:03-03:00",
+					"replyTo": "1569641264578560001",
+					"content": "Obrigada pelo aviso! 🙏",
+					"reactions": [{ "emoji": "🙏", "count": 2 }],
+					"components": {
+						"type": "layout",
+						"children": [
+							{
+								"type": "container",
+								"accentColor": "#7661a8",
+								"children": [
+									{
+										"type": "section",
+										"accessory": {
+											"type": "thumbnail",
+											"url": ""
+										},
+										"children": [
+											{
+												"type": "text",
+												"content": "Confirme sua presença no encontro de hoje."
+											}
+										]
+									},
+									{ "type": "separator" },
+									{
+										"type": "row",
+										"components": [
+											{
+												"type": "button",
+												"label": "Confirmar presença",
+												"style": "primary"
+											},
+											{
+												"type": "button",
+												"label": "Ver detalhes",
+												"style": "link",
+												"url": "https://example.com/encontro"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				},
+				{
+					"id": "1569642271211520003",
+					"user": "1272282414252691517",
+					"timestamp": "2026-11-10T09:18:00-03:00",
+					"content": "Teste <@1272282414252691517>",
+					"edited": true,
+					"reactions": [{ "emoji": "✅", "count": 1 }]
+				}
+			]
+		</script>
+		<script>
+			const exportInfo = JSON.parse(
+				document.querySelector("#export-info-data").textContent,
+			);
+			const users = JSON.parse(
+				document.querySelector("#users-data").textContent,
+			);
+			const messages = JSON.parse(
+				document.querySelector("#messages-data").textContent,
+			);
+
+			const messagesElement = document.querySelector("#messages");
+			const messageRows = [];
+			let filterEmptyState = null;
+			let highlightTimer = 0;
+			let scrollEndHandler = null;
+			const emojiSegmenter =
+				typeof Intl.Segmenter === "function"
+					? new Intl.Segmenter("pt-BR", {
+							granularity: "grapheme",
+						})
+					: null;
+			const emojiPattern =
+				/[\p{Extended_Pictographic}\p{Emoji_Presentation}]|\p{Regional_Indicator}{2}|\u20e3/u;
+			const twemojiBaseUrl =
+				"https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/";
+			const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+				day: "numeric",
+				month: "long",
+				year: "numeric",
+			});
+			const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
+				hour: "2-digit",
+				minute: "2-digit",
+			});
+
+			function normalizeSearch(value) {
+				return String(value || "")
+					.normalize("NFD")
+					.replace(/[\u0300-\u036f]/g, "")
+					.toLocaleLowerCase("pt-BR")
+					.trim();
+			}
+
+			function updateMessageFilters() {
+				const search = document.querySelector("#message-search");
+				const authorFilter = document.querySelector("#author-filter");
+				const resultsCount = document.querySelector("#results-count");
+				const clearSearch = document.querySelector("#clear-search");
+				const jumpLatest = document.querySelector("#jump-latest");
+				const query = normalizeSearch(search.value);
+				const authorId = authorFilter.value;
+				const isFiltering = Boolean(query || authorId);
+				let visibleCount = 0;
+
+				for (const row of messageRows) {
+					const matches =
+						(!query || row.dataset.search.includes(query)) &&
+						(!authorId || row.dataset.authorId === authorId);
+					row.hidden = !matches;
+					row.setAttribute("aria-hidden", String(!matches));
+					row.classList.toggle(
+						"filter-match",
+						isFiltering && matches,
+					);
+					if (matches) visibleCount++;
+				}
+
+				for (const divider of messagesElement.querySelectorAll(
+					".date-divider",
+				)) {
+					let sibling = divider.nextElementSibling;
+					let hasVisibleMessage = false;
+					while (
+						sibling &&
+						!sibling.classList.contains("date-divider")
+					) {
+						if (
+							sibling.classList.contains("message") &&
+							!sibling.hidden
+						) {
+							hasVisibleMessage = true;
+							break;
+						}
+						sibling = sibling.nextElementSibling;
+					}
+					divider.hidden = !hasVisibleMessage;
+				}
+
+				if (filterEmptyState) {
+					filterEmptyState.hidden = visibleCount > 0;
+					filterEmptyState.textContent =
+						isFiltering && messageRows.length > 0
+							? "Nenhuma mensagem encontrada com esses filtros."
+							: "Nenhuma mensagem para exibir.";
+				}
+				resultsCount.textContent = isFiltering
+					? `${visibleCount} de ${messageRows.length} mensagens`
+					: `${messageRows.length} mensagens`;
+				clearSearch.hidden = search.value.length === 0;
+				jumpLatest.disabled = visibleCount === 0;
+			}
+
+			function element(tag, className, text) {
+				const node = document.createElement(tag);
+				if (className) node.className = className;
+				if (text !== undefined) node.textContent = text;
+				return node;
+			}
+
+			function appendDiscordText(parent, text, metadata = {}) {
+				const lines = String(text).split("\n");
+				let list = null;
+				for (const [index, line] of lines.entries()) {
+					const heading = line.match(/^(#{1,3})[ \t]+(.*)$/);
+					const subtext = line.match(/^-#[ \t]+(.*)$/);
+					const listItem = line.match(/^-[ \t]+(.*)$/);
+					if (listItem) {
+						if (!list) {
+							list = element("ul", "discord-list");
+							parent.append(list);
+						}
+						const item = element("li");
+						appendInlineDiscordText(item, listItem[1], metadata);
+						list.append(item);
+						continue;
+					}
+
+					list = null;
+					if (heading) {
+						const level = heading[1].length;
+						const title = element(
+							`h${level}`,
+							`discord-heading discord-heading-${level}`,
+						);
+						appendInlineDiscordText(title, heading[2], metadata);
+						parent.append(title);
+					} else if (subtext) {
+						const note = element("small", "discord-subtext");
+						appendInlineDiscordText(note, subtext[1], metadata);
+						parent.append(note);
+					} else {
+						const lineElement = element("span", "discord-line");
+						appendInlineDiscordText(lineElement, line, metadata);
+						parent.append(lineElement);
+						if (index < lines.length - 1)
+							parent.append(document.createElement("br"));
+					}
+				}
+			}
+
+			function appendInlineDiscordText(parent, text, metadata = {}) {
+				const pattern =
+					/\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|`([^`\n]+)`|\*([^*\n]+)\*|_([^_\n]+)_/g;
+				let cursor = 0;
+				let match;
+
+				while ((match = pattern.exec(text)) !== null) {
+					appendPlainText(
+						parent,
+						text.slice(cursor, match.index),
+						metadata,
+					);
+					const tag =
+						match[1] !== undefined
+							? "strong"
+							: match[2] !== undefined
+								? "u"
+								: match[3] !== undefined
+									? "s"
+									: match[4] !== undefined
+										? "code"
+										: "em";
+					const value = match
+						.slice(1)
+						.find((part) => part !== undefined);
+					const formatted = element(
+						tag,
+						tag === "code" ? "discord-code" : "",
+					);
+					if (tag === "code") formatted.textContent = value;
+					else appendInlineDiscordText(formatted, value, metadata);
+					parent.append(formatted);
+					cursor = pattern.lastIndex;
+				}
+
+				appendPlainText(parent, text.slice(cursor), metadata);
+			}
+
+			function appendPlainText(parent, text, metadata) {
+				const pattern =
+					/<(a?):([A-Za-z0-9_]+):(\d+)>|<@!?(\d+)>|<@&(\d+)>|<#(\d+)>|@(everyone|here)\b/g;
+				let cursor = 0;
+				let match;
+				while ((match = pattern.exec(text)) !== null) {
+					appendTextWithEmoji(
+						parent,
+						text.slice(cursor, match.index),
+					);
+					if (match[3]) {
+						const name = match[2];
+						appendEmojiImage(
+							parent,
+							{
+								id: match[3],
+								name,
+								animated: match[1] === "a",
+							},
+							`:${name}:`,
+						);
+					} else if (match[4])
+						appendMention(parent, "user", match[4], metadata);
+					else if (match[5])
+						appendMention(parent, "role", match[5], metadata);
+					else if (match[6])
+						appendMention(parent, "channel", match[6], metadata);
+					else appendMention(parent, "everyone", match[7], metadata);
+					cursor = pattern.lastIndex;
+				}
+				appendTextWithEmoji(parent, text.slice(cursor));
+			}
+
+			function emojiImageUrls(emoji) {
+				if (emoji && typeof emoji === "object" && emoji.id) {
+					const extension = emoji.animated ? "gif" : "png";
+					return [
+						`https://cdn.discordapp.com/emojis/${encodeURIComponent(String(emoji.id))}.${extension}?size=48`,
+					];
+				}
+
+				const value =
+					typeof emoji === "string" ? emoji : emoji?.name || "";
+				if (!value || !emojiPattern.test(value)) return [];
+				const codepoints = Array.from(value, (character) =>
+					character.codePointAt(0).toString(16),
+				)
+					.map((codepoint) =>
+						/^[0-9a-f]+$/.test(codepoint)
+							? codepoint.replace(/^0+(?=[0-9a-f])/, "")
+							: codepoint,
+					)
+					.join("-");
+				if (!codepoints) return [];
+				const urls = [`${twemojiBaseUrl}${codepoints}.svg`];
+				const withoutVariationSelectors = codepoints
+					.split("-")
+					.filter(
+						(codepoint) =>
+							codepoint !== "fe0f" && codepoint !== "fe0e",
+					)
+					.join("-");
+				if (withoutVariationSelectors !== codepoints)
+					urls.push(
+						`${twemojiBaseUrl}${withoutVariationSelectors}.svg`,
+					);
+				return urls;
+			}
+
+			function appendEmojiImage(parent, emoji, fallback) {
+				const urls = emojiImageUrls(emoji);
+				if (urls.length === 0) {
+					parent.append(document.createTextNode(fallback));
+					return null;
+				}
+
+				const image = element("img", "discord-emoji");
+				image.src = urls[0];
+				image.alt = fallback;
+				image.title =
+					typeof emoji === "string"
+						? emoji
+						: emoji?.name || fallback;
+				image.loading = "lazy";
+				image.decoding = "async";
+				let fallbackIndex = 1;
+				image.addEventListener("error", () => {
+					if (fallbackIndex < urls.length)
+						image.src = urls[fallbackIndex++];
+					else image.replaceWith(document.createTextNode(fallback));
+				});
+				parent.append(image);
+				return image;
+			}
+
+			function emojiFallback(emoji) {
+				if (typeof emoji === "string") return emoji;
+				if (emoji?.id) return `:${emoji.name || "emoji"}:`;
+				return emoji?.name || "emoji";
+			}
+
+			function appendComponentLabel(parent, component, fallback) {
+				if (component.emoji) {
+					const emoji = component.emoji;
+					appendEmojiImage(parent, emoji, emojiFallback(emoji));
+					parent.append(document.createTextNode(" "));
+				}
+				parent.append(
+					document.createTextNode(component.label || fallback),
+				);
+			}
+
+			function appendTextWithEmoji(parent, text) {
+				if (!text) return;
+				if (!emojiSegmenter) {
+					parent.append(document.createTextNode(text));
+					return;
+				}
+
+				for (const { segment } of emojiSegmenter.segment(text)) {
+					if (emojiPattern.test(segment))
+						appendEmojiImage(parent, segment, segment);
+					else parent.append(document.createTextNode(segment));
+				}
+			}
+
+			function appendMention(parent, type, id, metadata) {
+				const mention = element(
+					type === "role" || type === "everyone" ? "span" : "a",
+					`mention${type === "role" ? " mention-role" : ""}`,
+				);
+				const prefix = type === "channel" ? "#" : "@";
+				if (type === "everyone") {
+					mention.textContent = `@${id}`;
+					mention.classList.add("mention-role");
+				} else if (type === "user") {
+					const user = users[id];
+					const userMention = metadata.users?.[id];
+					mention.textContent = `${prefix}${userMention?.name || user?.name || id}`;
+					mention.href = `https://discord.com/users/${encodeURIComponent(id)}`;
+					mention.target = "_blank";
+					mention.rel = "noopener noreferrer";
+					mention.title =
+						userMention?.name || user?.name || `Usuário ${id}`;
+				} else if (type === "channel") {
+					const channel = metadata.channels?.[id];
+					mention.textContent = `${prefix}${channel?.name || id}`;
+					mention.title = channel?.name
+						? `#${channel.name}`
+						: `Canal ${id}`;
+					const guildId = channel?.guildId || exportInfo.guildId;
+					if (guildId) {
+						mention.href = `https://discord.com/channels/${encodeURIComponent(String(guildId))}/${encodeURIComponent(id)}`;
+						mention.target = "_blank";
+						mention.rel = "noopener noreferrer";
+					}
+				} else {
+					const role = metadata.roles?.[id];
+					mention.textContent = `${prefix}${role?.name || id}`;
+					mention.title = role?.name || `Cargo ${id}`;
+					const color = validColor(role?.color);
+					if (color) {
+						mention.classList.add("mention-role-colored");
+						mention.style.setProperty(
+							"--mention-role-color",
+							color,
+						);
+					}
+				}
+				parent.append(mention);
+			}
+
+			function formattedElement(className, text, metadata = {}) {
+				const node = element("div", className);
+				appendDiscordText(node, text, metadata);
+				return node;
+			}
+
+			function safeUrl(value) {
+				if (typeof value !== "string" || !value) return "";
+				try {
+					const url = new URL(value, location.href);
+					return url.protocol === "https:" || url.protocol === "http:"
+						? url.href
+						: "";
+				} catch {
+					return "";
+				}
+			}
+
+			function appendImage(parent, url, className, alt = "") {
+				const src = safeUrl(url);
+				if (!src) return null;
+				const image = element("img", className);
+				image.src = src;
+				image.alt = alt;
+				image.loading = "lazy";
+				image.addEventListener("error", () => image.remove(), {
+					once: true,
+				});
+				parent.append(image);
+				return image;
+			}
+
+			function createAvatar(user) {
+				const avatar = element("img", "avatar");
+				avatar.alt = "";
+				avatar.src =
+					safeUrl(user.avatar) ||
+					"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%2341434a'/%3E%3Ccircle cx='20' cy='15' r='7' fill='%23b5bac1'/%3E%3Cpath d='M7 39c1-9 5-13 13-13s12 4 13 13' fill='%23b5bac1'/%3E%3C/svg%3E";
+				avatar.addEventListener(
+					"error",
+					() => {
+						avatar.removeAttribute("src");
+						avatar.alt = user.name || "Avatar";
+					},
+					{ once: true },
+				);
+				return avatar;
+			}
+
+			function validColor(value) {
+				if (
+					Number.isInteger(value) &&
+					value >= 0 &&
+					value <= 0xffffff
+				) {
+					return `#${value.toString(16).padStart(6, "0")}`;
+				}
+				return typeof value === "string" &&
+					/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(value)
+					? value
+					: "";
+			}
+
+			function getUserForMessage(message) {
+				const author = message.author || null;
+				const id = String(message.user ?? author?.id ?? "");
+				const stored = users[id] || {};
+				const member = message.member || {};
+				const displayName =
+					member.nick ||
+					member.nickname ||
+					author?.global_name ||
+					author?.username ||
+					stored.name ||
+					"";
+				const avatarHash = member.avatar || author?.avatar || "";
+				const avatarUrl =
+					member.avatar_url ||
+					author?.avatar_url ||
+					(avatarHash && id
+						? `https://cdn.discordapp.com/${member.avatar ? `guilds/${encodeURIComponent(String(message.guild_id || ""))}/users/${encodeURIComponent(id)}/avatars/${encodeURIComponent(avatarHash)}` : `avatars/${encodeURIComponent(id)}/${encodeURIComponent(avatarHash)}`}.png?size=128`
+						: "");
+				return {
+					...stored,
+					id,
+					name:
+						displayName ||
+						stored.name ||
+						(id ? `Usuário ${id}` : ""),
+					avatar: avatarUrl || stored.avatar || "",
+					bot: Boolean(author?.bot || member.bot || stored.bot),
+					role:
+						member.displayRole ||
+						member.display_role ||
+						stored.role ||
+						null,
+				};
+			}
+
+			function messageTimestamp(message) {
+				return message.timestamp || message.created_at || "";
+			}
+
+			function messageAuthorId(message) {
+				return String(message.user ?? message.author?.id ?? "");
+			}
+
+			function serverTagIconUrl(tag) {
+				const direct = tag?.iconUrl || tag?.icon_url;
+				if (direct) return direct;
+				const guildId = tag?.guildId || tag?.identityGuildId || exportInfo.guildId;
+				const badgeHash = tag?.badgeHash || tag?.badge;
+				return guildId && badgeHash
+					? `https://cdn.discordapp.com/guild-tag-badges/${encodeURIComponent(String(guildId))}/${encodeURIComponent(String(badgeHash))}.png?size=32`
+					: "";
+			}
+
+			function appendTagIcon(parent, iconUrl, className, alt = "") {
+				const src = safeUrl(iconUrl);
+				if (src) {
+					const image = appendImage(parent, src, className, alt);
+					if (image) {
+						image.loading = "eager";
+						image.decoding = "async";
+					}
+				}
+			}
+
+			function appendBotBadge(parent, user) {
+				if (!user?.bot) return;
+				const badge = element("span", "bot-tag", "BOT");
+				badge.title = "Aplicativo ou bot do Discord";
+				badge.setAttribute("aria-label", "Bot");
+				parent.append(badge);
+			}
+
+			function appendRoleIcon(parent, role) {
+				if (!role) return;
+				const rawIcon = role.icon || role.displayIcon || role.display_icon;
+				const assetUrl =
+					typeof rawIcon === "object" && rawIcon
+						? rawIcon.url || rawIcon.proxy_url || ""
+						: typeof rawIcon === "string" && /^https?:\/\//i.test(rawIcon)
+							? rawIcon
+							: "";
+				const iconHash = role.iconHash || role.icon_hash;
+				const iconUrl =
+					role.iconUrl ||
+					role.icon_url ||
+					assetUrl ||
+					(role.id && iconHash
+						? `https://cdn.discordapp.com/role-icons/${encodeURIComponent(String(role.id))}/${encodeURIComponent(String(iconHash))}.png?size=32`
+						: "");
+				if (iconUrl) {
+					appendTagIcon(parent, iconUrl, "role-icon", `Ícone do cargo ${role.name || ""}`);
+					return;
+				}
+				const emoji = role.iconEmoji || role.unicodeEmoji || role.emoji ||
+					(typeof rawIcon === "string" && !/^https?:\/\//i.test(rawIcon) ? rawIcon : "");
+				if (typeof emoji === "string" && emoji) {
+					const icon = element("span", "role-icon-emoji");
+					appendEmojiImage(icon, emoji, emoji);
+					icon.title = role.name || "Ícone do cargo";
+					parent.append(icon);
+				}
+			}
+
+			function appendIdentity(profile, user, warnings) {
+				const name = element("span", "message-name", user.name);
+				const role = user.role;
+				applyRoleNameStyle(name, role);
+				profile.append(name);
+				appendBotBadge(profile, user);
+
+				if (user.serverTag) {
+					const validTag =
+						typeof user.serverTag.label === "string" &&
+						Array.from(user.serverTag.label).length >= 1 &&
+						Array.from(user.serverTag.label).length <= 4;
+					if (validTag) appendServerTag(profile, user);
+					else {
+						const warning = `Tag do servidor de ${user.name || "usuário"} deve ter de 1 a 4 caracteres.`;
+						if (!warnings.includes(warning)) warnings.push(warning);
+					}
+				}
+
+				if (role) appendRoleIcon(profile, role);
+
+				const timestamp = profile.dataset.timestamp;
+				const time = element(
+					"time",
+					"message-time",
+					timeFormatter.format(new Date(timestamp)),
+				);
+				time.dateTime = timestamp;
+				profile.append(time);
+			}
+
+			function applyRoleNameStyle(name, role) {
+				if (
+					role &&
+					Array.isArray(role.gradient) &&
+					role.gradient.length >= 2
+				) {
+					const start = validColor(role.gradient[0]);
+					const end = validColor(role.gradient[1]);
+					if (start && end) {
+						name.classList.add("role-gradient");
+						name.style.setProperty("--gradient-start", start);
+						name.style.setProperty("--gradient-end", end);
+						name.title = role.name || "";
+					}
+				} else if (role && validColor(role.color)) {
+					name.style.setProperty(
+						"--name-color",
+						validColor(role.color),
+					);
+					name.title = role.name || "";
+				}
+			}
+
+			function appendServerTag(parent, user) {
+				const tag = user.serverTag;
+				if (
+					!tag ||
+					typeof tag.label !== "string" ||
+					Array.from(tag.label).length < 1 ||
+					Array.from(tag.label).length > 4
+				)
+					return;
+
+				const badge = element("span", "member-tag");
+				const color = validColor(tag.color);
+				if (color) badge.style.setProperty("--tag-color", color);
+				appendTagIcon(
+					badge,
+					serverTagIconUrl(tag),
+					"member-tag-icon",
+					`Ícone da tag ${tag.label}`,
+				);
+				badge.append(document.createTextNode(tag.label));
+				badge.title = tag.name || "Tag do servidor";
+				badge.setAttribute(
+					"aria-label",
+					`Tag do servidor: ${tag.label}`,
+				);
+				parent.append(badge);
+			}
+
+			function appendEmbed(parent, embed) {
+				if (!embed || typeof embed !== "object") return;
+				const card = element("article", "embed");
+				const accent = element("div", "embed-accent");
+				const color = validColor(embed.color);
+				if (color) accent.style.setProperty("--embed-color", color);
+				const inner = element("div", "embed-inner");
+				const main = element("div", "embed-main");
+
+				if (embed.author && typeof embed.author.name === "string") {
+					const author = element("div", "embed-author");
+					appendImage(
+						author,
+						embed.author.icon_url || embed.author.iconUrl,
+						"embed-author-icon",
+					);
+					author.append(document.createTextNode(embed.author.name));
+					main.append(author);
+				}
+
+				if (typeof embed.title === "string" && embed.title) {
+					const title = element("div", "embed-title");
+					const url = safeUrl(embed.url);
+					if (url) {
+						const link = element("a", "", embed.title);
+						link.href = url;
+						link.target = "_blank";
+						link.rel = "noopener noreferrer";
+						title.append(link);
+					} else {
+						title.textContent = embed.title;
+					}
+					main.append(title);
+				}
+
+				if (
+					typeof embed.description === "string" &&
+					embed.description
+				) {
+					main.append(
+						formattedElement(
+							"embed-description",
+							embed.description,
+						),
+					);
+				}
+
+				if (Array.isArray(embed.fields) && embed.fields.length > 0) {
+					const fields = element("div", "embed-fields");
+					for (const field of embed.fields) {
+						if (
+							!field ||
+							typeof field.name !== "string" ||
+							typeof field.value !== "string"
+						)
+							continue;
+						const fieldElement = element(
+							"div",
+							`embed-field${field.inline ? " inline" : ""}`,
+						);
+						fieldElement.append(
+							element("div", "embed-field-name", field.name),
+						);
+						fieldElement.append(
+							formattedElement("embed-field-value", field.value),
+						);
+						fields.append(fieldElement);
+					}
+					if (fields.childElementCount > 0) main.append(fields);
+				}
+
+				const thumbnail = safeUrl(
+					embed.thumbnail && (embed.thumbnail.url || embed.thumbnail),
+				);
+				const imageUrl = safeUrl(
+					embed.image && (embed.image.url || embed.image),
+				);
+				if (thumbnail)
+					appendImage(inner, thumbnail, "embed-thumbnail", "");
+				if (imageUrl)
+					appendImage(
+						main,
+						imageUrl,
+						"embed-image",
+						embed.title || "Imagem do embed",
+					);
+
+				if (embed.footer && typeof embed.footer.text === "string") {
+					const footer = element("div", "embed-footer");
+					appendImage(
+						footer,
+						embed.footer.icon_url || embed.footer.iconUrl,
+						"embed-footer-icon",
+					);
+					footer.append(document.createTextNode(embed.footer.text));
+					if (embed.timestamp) {
+						const date = new Date(embed.timestamp);
+						if (!Number.isNaN(date.getTime())) {
+							footer.append(document.createTextNode(" • "));
+							footer.append(
+								element(
+									"time",
+									"embed-timestamp",
+									timeFormatter.format(date),
+								),
+							);
+						}
+					}
+					main.append(footer);
+				}
+
+				if (embed.timestamp && !(embed.footer && embed.footer.text)) {
+					const date = new Date(embed.timestamp);
+					if (!Number.isNaN(date.getTime())) {
+						const footer = element("div", "embed-footer");
+						footer.append(
+							element(
+								"time",
+								"embed-timestamp",
+								timeFormatter.format(date),
+							),
+						);
+						main.append(footer);
+					}
+				}
+
+				inner.prepend(main);
+				card.append(accent, inner);
+				parent.append(card);
+			}
+
+			function appendLaunchIcon(parent) {
+				const namespace = "http://www.w3.org/2000/svg";
+				const icon = document.createElementNS(namespace, "svg");
+				icon.setAttribute("class", "component-launch-icon");
+				icon.setAttribute("aria-hidden", "true");
+				icon.setAttribute("role", "img");
+				icon.setAttribute("width", "16");
+				icon.setAttribute("height", "16");
+				icon.setAttribute("fill", "none");
+				icon.setAttribute("viewBox", "0 0 24 24");
+				for (const pathData of [
+					"M15 2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V4.41l-4.3 4.3a1 1 0 1 1-1.4-1.42L19.58 3H16a1 1 0 0 1-1-1Z",
+					"M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-6a1 1 0 1 0-2 0v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a1 1 0 1 0 0-2H5Z",
+				]) {
+					const path = document.createElementNS(namespace, "path");
+					path.setAttribute("fill", "currentColor");
+					path.setAttribute("d", pathData);
+					icon.append(path);
+				}
+				parent.append(icon);
+			}
+
+			function renderComponent(component, depth = 0) {
+				if (!component || typeof component !== "object" || depth > 12)
+					return null;
+				const numericTypes = {
+					1: "action_row",
+					2: "button",
+					3: "string_select",
+					5: "user_select",
+					6: "role_select",
+					7: "mentionable_select",
+					8: "channel_select",
+					9: "section",
+					10: "text_display",
+					11: "thumbnail",
+					12: "media_gallery",
+					13: "file",
+					14: "separator",
+					17: "container",
+				};
+				const kind =
+					numericTypes[component.type] ||
+					String(component.type || "").toLowerCase();
+				const children = Array.isArray(component.children)
+					? component.children
+					: Array.isArray(component.components)
+						? component.components
+						: Array.isArray(component.rows)
+							? component.rows
+							: [];
+				if (kind === "text" || kind === "text_display")
+					return typeof (component.content ?? component.text) ===
+						"string"
+						? formattedElement(
+								"component-text",
+								component.content ?? component.text,
+							)
+						: null;
+				if (kind === "separator")
+					return element("hr", "component-separator");
+				if (kind === "thumbnail") {
+					const src = safeUrl(component.url || component.media?.url);
+					if (!src) return null;
+					const image = element("img", "component-accessory");
+					image.src = src;
+					image.alt = component.description || "";
+					image.loading = "lazy";
+					return image;
+				}
+				if (kind === "section") {
+					const section = element("div", "component-section");
+					const text = element("div");
+					for (const child of children) {
+						const rendered = renderComponent(child, depth + 1);
+						if (rendered) text.append(rendered);
+					}
+					section.append(text);
+					if (component.accessory) {
+						const accessory = renderComponent(
+							component.accessory,
+							depth + 1,
+						);
+						if (accessory) section.append(accessory);
+					}
+					return section;
+				}
+				if (
+					["container", "layout", "layout_view", "view"].includes(
+						kind,
+					)
+				) {
+					const container = element(
+						"div",
+						kind === "container"
+							? "component-container"
+							: "components",
+					);
+					if (kind === "container") {
+						const accent = element("div", "embed-accent");
+						const color = validColor(
+							component.accent_color ?? component.accentColor,
+						);
+						if (color)
+							accent.style.setProperty("--embed-color", color);
+						const content = element(
+							"div",
+							"component-container-content",
+						);
+						for (const child of children) {
+							const rendered = renderComponent(child, depth + 1);
+							if (rendered) content.append(rendered);
+						}
+						container.append(accent, content);
+						return container;
+					}
+					for (const child of children) {
+						const rendered = renderComponent(child, depth + 1);
+						if (rendered) container.append(rendered);
+					}
+					return container;
+				}
+				if (kind === "media_gallery" || kind === "gallery") {
+					const gallery = element("div", "component-media-gallery");
+					for (const item of component.items || children) {
+						const url = safeUrl(item?.url || item?.media?.url);
+						if (!url) continue;
+						const image = element("img", "component-media");
+						image.src = url;
+						image.alt = item.description || "";
+						image.loading = "lazy";
+						gallery.append(image);
+					}
+					return gallery.childElementCount ? gallery : null;
+				}
+				if (kind === "file") {
+					const url = safeUrl(component.url || component.file?.url);
+					if (!url) return null;
+					const link = element(
+						"a",
+						"component-file",
+						component.name || component.file?.name || "Arquivo",
+					);
+					link.href = url;
+					link.target = "_blank";
+					link.rel = "noopener noreferrer";
+					return link;
+				}
+				if (kind === "button") {
+					const styles = {
+						1: "primary",
+						2: "secondary",
+						3: "success",
+						4: "danger",
+						5: "link",
+						6: "premium",
+					};
+					const style =
+						styles[component.style] ||
+						(typeof component.style === "string"
+							? component.style
+							: "secondary");
+					if (style === "link" && safeUrl(component.url)) {
+								const link = element(
+									"a",
+									`component-button ${style}`,
+								);
+								appendComponentLabel(
+									link,
+									component,
+									"Abrir link",
+								);
+								link.href = safeUrl(component.url);
+								link.target = "_blank";
+								link.rel = "noopener noreferrer";
+								appendLaunchIcon(link);
+								return link;
+							}
+							const button = element(
+								"button",
+								`component-button ${style}`,
+					);
+							appendComponentLabel(button, component, "Botão");
+					button.type = "button";
+					button.disabled = true;
+					button.title =
+						"Componente arquivado; interação indisponível";
+					button.setAttribute(
+						"aria-label",
+						component.label || "Botão arquivado",
+					);
+					return button;
+				}
+				if (kind.endsWith("_select") || kind === "select") {
+					const wrapper = element("div", "component-select");
+					wrapper.append(
+						element(
+							"div",
+							"component-select-placeholder",
+							component.placeholder || "Menu de seleção",
+						),
+					);
+					const options = Array.isArray(component.options)
+						? component.options
+						: [];
+					if (options.length) {
+						const list = element("ul", "component-options");
+						for (const option of options) {
+							const li = element("li");
+							if (option.emoji) {
+								appendEmojiImage(
+									li,
+									option.emoji,
+									emojiFallback(option.emoji),
+								);
+								li.append(document.createTextNode(" "));
+							}
+							li.append(
+								document.createTextNode(
+									option.label || option.value || "Opção",
+								),
+							);
+							if (option.description)
+								li.append(
+									element("small", "", option.description),
+								);
+							list.append(li);
+						}
+						wrapper.append(list);
+					} else
+						wrapper.append(
+							element(
+								"small",
+								"",
+								"Opções não disponíveis nesta exportação.",
+							),
+						);
+					return wrapper;
+				}
+				if (kind === "row" || kind === "action_row") {
+					const row = element("div", "component-row");
+					for (const child of children) {
+						const rendered = renderComponent(child, depth + 1);
+						if (rendered) row.append(rendered);
+					}
+					return row;
+				}
+				if (children.length) {
+					const group = element("div", "components");
+					for (const child of children) {
+						const rendered = renderComponent(child, depth + 1);
+						if (rendered) group.append(rendered);
+					}
+					return group;
+				}
+				return null;
+			}
+
+			function appendComponents(parent, components) {
+				if (!components) return;
+				const root = Array.isArray(components)
+					? { type: "layout", children: components }
+					: components;
+				const rendered = renderComponent(root);
+				if (rendered) {
+					rendered.classList.add("components");
+					parent.append(rendered);
+				}
+			}
+
+			function appendReactions(parent, reactions) {
+				if (!Array.isArray(reactions) || reactions.length === 0) return;
+				const group = element("div", "reactions");
+				for (const reaction of reactions) {
+					if (!reaction || !Number.isFinite(reaction.count)) continue;
+					const emoji = reaction.emoji;
+					const label =
+						typeof emoji === "string"
+							? emoji
+							: emoji?.name || "emoji";
+					const chip = element(
+						"span",
+						`reaction${reaction.me ? " me" : ""}`,
+					);
+					appendEmojiImage(chip, emoji, label);
+					chip.append(document.createTextNode(` ${reaction.count}`));
+					if (reaction.me) chip.title = "Você reagiu";
+					group.append(chip);
+				}
+				if (group.childElementCount > 0) parent.append(group);
+			}
+
+			function appendAttachments(parent, attachments) {
+				if (!Array.isArray(attachments) || !attachments.length) return;
+				const group = element("div", "attachments");
+				for (const file of attachments) {
+					if (!file || typeof file !== "object") continue;
+					const url = safeUrl(file.url || file.proxy_url);
+					if (!url) continue;
+					const type = String(file.content_type || "");
+					if (type.startsWith("image/")) {
+						const link = element("a", "attachment");
+						link.href = url;
+						link.target = "_blank";
+						link.rel = "noopener noreferrer";
+						appendImage(
+							link,
+							url,
+							"",
+							file.description ||
+								file.filename ||
+								"Imagem anexada",
+						);
+						link.append(
+							document.createTextNode(file.filename || "Imagem"),
+						);
+						group.append(link);
+					} else {
+						const link = element(
+							"a",
+							"attachment",
+							`${file.filename || "Arquivo"}${Number.isFinite(file.size) ? ` · ${(file.size / 1024).toFixed(1)} KB` : ""}`,
+						);
+						link.href = url;
+						link.target = "_blank";
+						link.rel = "noopener noreferrer";
+						group.append(link);
+					}
+				}
+				if (group.childElementCount) parent.append(group);
+			}
+
+			function renderMessage(message, user, firstInGroup, warnings) {
+				const hasReply = Boolean(replyId(message));
+				const row = element(
+					"article",
+					`message${firstInGroup ? " first-in-group" : ""}${hasReply ? " has-reply" : ""}${message.deleted ? " deleted" : ""}${message.edited || message.edited_timestamp ? " edited" : ""}`,
+				);
+				if (message.id !== undefined && message.id !== null) {
+					row.dataset.messageId = String(message.id);
+					row.id = `message-${encodeURIComponent(String(message.id))}`;
+				}
+
+				const avatarSlot = element("div", "avatar-slot");
+				if (firstInGroup) {
+					avatarSlot.append(createAvatar(user));
+				} else {
+					const compact = element(
+						"time",
+						"compact-time",
+						timeFormatter.format(
+							new Date(messageTimestamp(message)),
+						),
+					);
+					compact.dateTime = messageTimestamp(message);
+					avatarSlot.append(compact);
+				}
+				const contentRow = element("div", "message-content-row");
+				contentRow.append(avatarSlot);
+
+				const body = element("div", "message-body");
+				if (firstInGroup) {
+					const profile = element("div", "message-profile");
+					profile.dataset.timestamp = messageTimestamp(message);
+					appendIdentity(profile, user, warnings);
+					body.append(profile);
+				} else {
+					const filterAuthor = element("div", "filter-author");
+					filterAuthor.append(
+						element("span", "", user.name),
+						element(
+							"time",
+							"",
+							timeFormatter.format(
+								new Date(messageTimestamp(message)),
+							),
+						),
+					);
+					filterAuthor.lastElementChild.dateTime =
+						messageTimestamp(message);
+					body.append(filterAuthor);
+				}
+
+				if (message.deleted)
+					body.append(
+						element("div", "deleted-label", "Mensagem excluída"),
+					);
+				if (typeof message.content === "string" && message.content) {
+					body.append(
+						formattedElement(
+							"message-content",
+							message.content,
+							message.mentionData,
+						),
+					);
+				}
+				for (const embed of Array.isArray(message.embeds)
+					? message.embeds
+					: [])
+					appendEmbed(body, embed);
+				appendAttachments(body, message.attachments);
+				appendComponents(body, message.components);
+				appendReactions(body, message.reactions);
+				contentRow.append(body);
+				row.append(contentRow);
+				return { row, body };
+			}
+
+			function replyId(message) {
+				if (
+					typeof message.replyTo === "string" ||
+					typeof message.replyTo === "number"
+				) {
+					return String(message.replyTo);
+				}
+				const reference = message.replyTo || message.message_reference;
+				if (
+					reference &&
+					(typeof reference.id === "string" ||
+						typeof reference.id === "number")
+				)
+					return String(reference.id);
+				return "";
+			}
+
+			function jumpToMessage(targetRow) {
+				const reduceMotion = window.matchMedia(
+					"(prefers-reduced-motion: reduce)",
+				).matches;
+				if (highlightTimer) window.clearTimeout(highlightTimer);
+				if (scrollEndHandler) {
+					window.removeEventListener("scrollend", scrollEndHandler);
+					scrollEndHandler = null;
+				}
+				document
+					.querySelectorAll(".reply-target-highlight")
+					.forEach((item) =>
+						item.classList.remove("reply-target-highlight"),
+					);
+
+				const targetRect = targetRow.getBoundingClientRect();
+				const maxScroll =
+					document.documentElement.scrollHeight - window.innerHeight;
+				const targetScroll = Math.max(
+					0,
+					Math.min(
+						maxScroll,
+						targetRect.top +
+							window.scrollY +
+							targetRect.height / 2 -
+							window.innerHeight / 2,
+					),
+				);
+				const scrollDistance = Math.abs(targetScroll - window.scrollY);
+				window.scrollTo({
+					top: targetScroll,
+					behavior: reduceMotion ? "auto" : "smooth",
+				});
+
+				const highlightTarget = () => {
+					if (highlightTimer) window.clearTimeout(highlightTimer);
+					if (scrollEndHandler) {
+						window.removeEventListener(
+							"scrollend",
+							scrollEndHandler,
+						);
+						scrollEndHandler = null;
+					}
+					targetRow.classList.add("reply-target-highlight");
+					highlightTimer = window.setTimeout(
+						() =>
+							targetRow.classList.remove(
+								"reply-target-highlight",
+							),
+						1800,
+					);
+				};
+
+				if (reduceMotion || scrollDistance < 1) {
+					highlightTarget();
+					return;
+				}
+				scrollEndHandler = highlightTarget;
+				window.addEventListener("scrollend", scrollEndHandler, {
+					once: true,
+				});
+				highlightTimer = window.setTimeout(highlightTarget, 1400);
+			}
+
+			function appendReplyReference(
+				row,
+				message,
+				messagesById,
+				rowsById,
+			) {
+				const id = replyId(message);
+				if (!id) return;
+
+				const target =
+					messagesById.get(id) ||
+					message.referenced_message ||
+					message.replyTo?.referenced_message;
+				const targetRow = rowsById.get(id);
+				const targetUser = target ? getUserForMessage(target) : null;
+				const replySnapshot =
+					message.replyTo || message.referenced_message || {};
+				const label = targetUser
+					? targetUser.name
+					: replySnapshot.userName ||
+						replySnapshot.author?.global_name ||
+						replySnapshot.author?.username;
+				const targetUserId = targetUser?.id || replySnapshot.user;
+				const snippet = target
+					? target.deleted
+						? "Mensagem excluída"
+						: typeof target.content === "string"
+							? target.content
+							: "Mensagem sem texto"
+					: (message.replyTo || message.referenced_message) &&
+						  typeof (message.replyTo || message.referenced_message)
+								.content === "string"
+						? (message.replyTo || message.referenced_message)
+								.content
+						: "Mensagem não incluída nesta exportação";
+				const reference = element(
+					"div",
+					`reply-reference${targetRow ? "" : " unresolved"}`,
+				);
+				const spine = element(
+					targetRow ? "button" : "span",
+					"reply-spine",
+				);
+				if (targetRow) {
+					spine.type = "button";
+					spine.setAttribute("aria-label", "Ir para resposta");
+					spine.addEventListener("click", () =>
+						jumpToMessage(targetRow),
+					);
+				}
+				reference.append(spine);
+
+				const header = element("div", "reply-header");
+				if (targetUser) {
+					const avatar = createAvatar(targetUser);
+					avatar.className = "reply-avatar";
+					header.append(avatar);
+				} else if (
+					replySnapshot.avatar ||
+					replySnapshot.author?.avatar_url
+				)
+					appendImage(
+						header,
+						replySnapshot.avatar || replySnapshot.author.avatar_url,
+						"reply-avatar",
+					);
+				const replyName = element(
+					targetUserId ? "a" : "span",
+					"message-name reply-name",
+					`@${label || "Mensagem original"}`,
+				);
+				applyRoleNameStyle(replyName, targetUser?.role);
+				if (targetUserId) {
+					replyName.href = `https://discord.com/users/${encodeURIComponent(String(targetUserId))}`;
+					replyName.target = "_blank";
+					replyName.rel = "noopener noreferrer";
+				}
+				header.append(replyName);
+				if (targetUser) {
+					appendBotBadge(header, targetUser);
+					appendServerTag(header, targetUser);
+					appendRoleIcon(header, targetUser.role);
+				}
+				reference.append(header);
+
+				const preview = element(
+					targetRow ? "button" : "div",
+					"reply-preview",
+				);
+				if (targetRow) {
+					preview.type = "button";
+					preview.setAttribute(
+						"aria-label",
+						`Ir para mensagem de ${label || "usuário"}`,
+					);
+					preview.addEventListener("click", () =>
+						jumpToMessage(targetRow),
+					);
+				}
+				const previewText = element("span", "reply-snippet");
+				appendDiscordText(
+					previewText,
+					snippet,
+					target?.mentionData || {},
+				);
+				preview.append(previewText);
+				reference.append(preview);
+				row.insertBefore(
+					reference,
+					row.querySelector(".message-content-row"),
+				);
+			}
+
+			function renderMessages() {
+				const warnings = [];
+				let previousMessage = null;
+				let previousDate = "";
+				const messagesById = new Map();
+				const rowsById = new Map();
+				const rendered = [];
+
+				for (const message of messages) {
+					if (
+						message &&
+						message.id !== undefined &&
+						message.id !== null
+					) {
+						const id = String(message.id);
+						if (messagesById.has(id)) {
+							warnings.push(`ID de mensagem duplicado: ${id}.`);
+						} else {
+							messagesById.set(id, message);
+						}
+					}
+				}
+
+				const orderedMessages = [...messages]
+					.filter(Boolean)
+					.sort(
+						(a, b) =>
+							new Date(messageTimestamp(a)).getTime() -
+							new Date(messageTimestamp(b)).getTime(),
+					);
+				for (const [index, message] of orderedMessages.entries()) {
+					if (!message || typeof message !== "object") {
+						warnings.push(
+							`Registro ${index + 1}: formato de mensagem inválido.`,
+						);
+						continue;
+					}
+					const user = getUserForMessage(message);
+					const date = new Date(messageTimestamp(message));
+					if (
+						!user.id ||
+						!user.name ||
+						Number.isNaN(date.getTime())
+					) {
+						warnings.push(
+							`Mensagem ${message.id || index + 1}: autor ou data inválidos.`,
+						);
+						continue;
+					}
+
+					const dateKey = dateFormatter.format(date);
+					if (dateKey !== previousDate) {
+						messagesElement.append(
+							element("div", "date-divider", dateKey),
+						);
+						previousDate = dateKey;
+						previousMessage = null;
+					}
+					const previousTime = previousMessage
+						? new Date(messageTimestamp(previousMessage)).getTime()
+						: 0;
+					const firstInGroup =
+						!previousMessage ||
+						Boolean(replyId(message)) ||
+						messageAuthorId(previousMessage) !==
+							messageAuthorId(message) ||
+						date.getTime() - previousTime > 7 * 60 * 1000;
+
+					const renderedMessage = renderMessage(
+						message,
+						user,
+						firstInGroup,
+						warnings,
+					);
+					messagesElement.append(renderedMessage.row);
+					if (
+						message.id !== undefined &&
+						message.id !== null &&
+						!rowsById.has(String(message.id))
+					) {
+						rowsById.set(String(message.id), renderedMessage.row);
+					}
+					rendered.push({
+						row: renderedMessage.row,
+						message,
+						user,
+					});
+					previousMessage = message;
+				}
+
+				for (const item of rendered) {
+					appendReplyReference(
+						item.row,
+						item.message,
+						messagesById,
+						rowsById,
+					);
+					item.row.dataset.authorId = item.user.id;
+					item.row.dataset.search = normalizeSearch(
+						[
+							item.message.content,
+							item.user.name,
+							item.message.id,
+							item.row.textContent,
+						].join(" "),
+					);
+					messageRows.push(item.row);
+				}
+
+				const authors = new Map();
+				for (const item of rendered) {
+					if (!authors.has(item.user.id))
+						authors.set(item.user.id, item.user.name);
+				}
+				const authorFilter = document.querySelector("#author-filter");
+				for (const [id, name] of [...authors].sort((a, b) =>
+					a[1].localeCompare(b[1], "pt-BR"),
+				)) {
+					const option = element("option", "", name);
+					option.value = id;
+					authorFilter.append(option);
+				}
+
+				if (warnings.length > 0) {
+					const warning = element(
+						"div",
+						"data-warning",
+						`${warnings.length} registro(s) não puderam ser exibidos: ${warnings.join(" ")}`,
+					);
+					warning.setAttribute("role", "alert");
+					messagesElement.prepend(warning);
+				}
+				filterEmptyState = element(
+					"p",
+					"empty-state",
+					"Nenhuma mensagem para exibir.",
+				);
+				filterEmptyState.hidden = messageRows.length > 0;
+				messagesElement.append(filterEmptyState);
+			}
+
+			function ticketData() {
+				if (exportInfo.ticketInfo && typeof exportInfo.ticketInfo === "object") return exportInfo.ticketInfo;
+				if (exportInfo.ticket && typeof exportInfo.ticket === "object") return exportInfo.ticket;
+				return exportInfo;
+			}
+
+			function isTicketExport() {
+				return exportInfo.type === "ticket" || exportInfo.kind === "ticket" ||
+					exportInfo.isTicket === true || Boolean(exportInfo.ticketInfo) ||
+					(Boolean(exportInfo.ticket) && typeof exportInfo.ticket === "object");
+			}
+
+			function firstTicketValue(...values) {
+				for (const value of values) {
+					if (value === null || value === undefined || value === "") continue;
+					if (typeof value === "object") {
+						const nested = value.displayName || value.display_name || value.global_name || value.username || value.name;
+						if (nested) return String(nested);
+						continue;
+					}
+					return String(value);
+				}
+				return "";
+			}
+
+			function formatTicketDate(value) {
+				if (!value) return "";
+				const date = new Date(value);
+				if (Number.isNaN(date.getTime())) return String(value);
+				return `${dateFormatter.format(date)} · ${timeFormatter.format(date)}`;
+			}
+
+			function appendTicketMeta(container, label, value) {
+				if (!value) return;
+				const item = element("div", "ticket-meta-item");
+				item.append(element("div", "ticket-meta-label", label));
+				item.append(element("div", "ticket-meta-value", value));
+				container.append(item);
+			}
+
+			function renderTicketOverview() {
+				const panel = document.querySelector("#ticket-overview");
+				if (!isTicketExport()) {
+					panel.hidden = true;
+					return;
+				}
+
+				const ticket = ticketData();
+				const channelName = firstTicketValue(ticket.channelName, ticket.channel_name, exportInfo.channelName, exportInfo.channel_name);
+				const title = firstTicketValue(ticket.title, ticket.name, channelName, "Atendimento");
+				const rawStatus = firstTicketValue(ticket.status, ticket.state, exportInfo.status, ticket.closed || exportInfo.closed ? "closed" : "open").toLowerCase();
+				const statusKey = /clos|encerr|fech/.test(rawStatus) ? "closed" : /pend|wait|aguard/.test(rawStatus) ? "pending" : /progress|claim|atend|work/.test(rawStatus) ? "in_progress" : "open";
+				const statusLabel = statusKey === "closed" ? "Encerrado" : statusKey === "pending" ? "Pendente" : statusKey === "in_progress" ? "Em atendimento" : "Aberto";
+
+				panel.replaceChildren();
+				panel.hidden = false;
+				const heading = element("div", "ticket-overview-heading");
+				heading.append(element("div", "ticket-emblem", "✠"));
+				const copy = element("div", "ticket-heading-copy");
+				copy.append(element("div", "ticket-kicker", firstTicketValue(ticket.guildName, exportInfo.guildName, "Sacra Communitas").toUpperCase() + " · CENTRAL DE ATENDIMENTO"));
+				copy.append(element("div", "ticket-heading-title", title));
+				heading.append(copy);
+				const status = element("span", "ticket-status", statusLabel);
+				status.dataset.status = statusKey;
+				heading.append(status);
+				panel.append(heading);
+
+				const meta = element("div", "ticket-meta");
+				appendTicketMeta(meta, "Solicitante", firstTicketValue(ticket.requesterName, ticket.requester, ticket.openerName, ticket.createdBy, ticket.created_by));
+				appendTicketMeta(meta, "Responsável", firstTicketValue(ticket.assigneeName, ticket.assignee, ticket.claimedBy, ticket.claimed_by, ticket.staffName));
+				appendTicketMeta(meta, "Categoria", firstTicketValue(ticket.categoryName, ticket.category, ticket.parentName, ticket.parent));
+				appendTicketMeta(meta, "Abertura", formatTicketDate(firstTicketValue(ticket.createdAt, ticket.created_at, ticket.openedAt, ticket.opened_at)));
+				appendTicketMeta(meta, "Encerramento", formatTicketDate(firstTicketValue(ticket.closedAt, ticket.closed_at, ticket.resolvedAt, ticket.resolved_at)));
+				appendTicketMeta(meta, "Identificador", firstTicketValue(ticket.ticketId, ticket.ticket_id, ticket.id, exportInfo.ticketId, exportInfo.ticket_id));
+				if (meta.childElementCount) panel.append(meta);
+
+				const footer = element("div", "ticket-overview-footer");
+				footer.append(element("span", "", "Sacra Communitas · Registro de atendimento"));
+				footer.append(element("span", "", `${messages.length} mensagens preservadas`));
+				panel.append(footer);
+			}
+
+			function renderTitle() {
+				const title = document.querySelector("#export-title");
+				const subtitle = document.querySelector("#export-subtitle");
+				const icon = document.querySelector("#title-icon");
+				const titleBar = document.querySelector(".title-bar");
+				if (isTicketExport()) {
+					const ticket = ticketData();
+					title.textContent = firstTicketValue(ticket.channelName, ticket.channel_name, ticket.title, ticket.name, exportInfo.channelName, "Atendimento");
+					icon.textContent = "✠";
+					subtitle.textContent = `${firstTicketValue(ticket.guildName, exportInfo.guildName, "Sacra Communitas")} · Registro de atendimento · ${messages.length} mensagens`;
+					titleBar.classList.add("ticket-title-bar");
+					renderTicketOverview();
+				} else if (exportInfo.type === "user") {
+					titleBar.classList.remove("ticket-title-bar");
+					const userName = exportInfo.userName || "Usuário";
+					title.textContent = `Mensagens de ${userName}`;
+					icon.textContent = "@";
+					subtitle.textContent = "Exportação de conversa";
+				} else if (exportInfo.type === "bulk") {
+					titleBar.classList.remove("ticket-title-bar");
+					title.textContent =
+						exportInfo.title || "Exportação de mensagens";
+					icon.textContent = "≡";
+					subtitle.textContent = `${messages.length} mensagens exportadas · exportação em lote`;
+				} else {
+					titleBar.classList.remove("ticket-title-bar");
+					const channelName = exportInfo.channelName || "canal";
+					title.textContent = channelName;
+					icon.textContent = "#";
+					subtitle.textContent = `${messages.length} mensagens`;
+				}
+				document.title = `${title.textContent} — Exportação`;
+			}
+
+			function setupMessageControls() {
+				const search = document.querySelector("#message-search");
+				const authorFilter = document.querySelector("#author-filter");
+				const clearSearch = document.querySelector("#clear-search");
+				const jumpLatest = document.querySelector("#jump-latest");
+
+				search.addEventListener("input", updateMessageFilters);
+				authorFilter.addEventListener("change", updateMessageFilters);
+				clearSearch.addEventListener("click", () => {
+					search.value = "";
+					updateMessageFilters();
+					search.focus();
+				});
+				jumpLatest.addEventListener("click", () => {
+					const latestVisible = [...messageRows]
+						.reverse()
+						.find((row) => !row.hidden);
+					if (latestVisible) jumpToMessage(latestVisible);
+				});
+				document.addEventListener("keydown", (event) => {
+					const target = event.target;
+					const isEditing =
+						target instanceof HTMLElement &&
+						(target.isContentEditable ||
+							["INPUT", "SELECT", "TEXTAREA"].includes(
+								target.tagName,
+							));
+					if (event.key === "/" && !isEditing) {
+						event.preventDefault();
+						search.focus();
+					} else if (event.key === "Escape" && search.value) {
+						search.value = "";
+						updateMessageFilters();
+					}
+				});
+				updateMessageFilters();
+			}
+
+			renderTitle();
+			renderMessages();
+			setupMessageControls();
+		</script>
+	</body>
+</html>

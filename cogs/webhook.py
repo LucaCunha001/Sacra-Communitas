@@ -143,11 +143,15 @@ class WebhookCog(commands.Cog):
 			},
 			"Liturgia Diária": {
 				"id": 1429517914494603274,
-				"text": "Atualizada todos os dias às 6:00 (horário de Brasília) para acompanhar a vida litúrgica."
+				"text": "Atualizada todos os dias para acompanhar as liturgia do dia."
 			},
 			"Avisos": {
 				"id": 1429791707960180786,
 				"text": "Avisos recentes da comunidade."
+			},
+			"Booster": {
+				"id": 1568422175164342292,
+				"text": "Veja os benefícios de impulsionar o servidor."
 			}
 		}
 		container = ui.Container(
@@ -169,7 +173,11 @@ class WebhookCog(commands.Cog):
 		view = ui.LayoutView()
 		view.add_item(container)
 
-		await interaction.channel.send(view=view)
+		msg = await interaction.channel.fetch_message(1528824572630274294)
+		if msg:
+			await msg.edit(view=view)
+		else:
+			await interaction.channel.send(view=view)
 		await interaction.response.send_message("Mensagem enviada com sucesso!", ephemeral=True)
 
 	def get_webhook_embeds(self, embed_key: str):

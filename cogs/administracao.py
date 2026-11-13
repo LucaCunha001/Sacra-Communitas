@@ -58,10 +58,6 @@ class SacerdocioCog(commands.Cog):
 		description="Comandos relacionados ao sacerdócio",
 	)
 
-	# ============================================================
-	# HIERARQUIA
-	# ============================================================
-
 	def get_roles(
 		self,
 		guild: discord.Guild,
@@ -102,16 +98,9 @@ class SacerdocioCog(commands.Cog):
 		interaction: discord.Interaction,
 		sacerdote: discord.Member,
 	) -> bool:
-		# O dono sempre pode administrar.
 		if interaction.user.id == interaction.guild.owner_id:
 			return True
-
-		# Mantém sua regra global de designação de cargos.
-		# Se ela já controla Papa/Conclave etc., continua sendo
-		# a primeira barreira.
-		#
-		# Aqui estamos apenas adicionando a proteção hierárquica.
-
+		
 		ator = self.get_rank(
 			interaction.user,
 			interaction.guild,
@@ -131,10 +120,6 @@ class SacerdocioCog(commands.Cog):
 			return False
 
 		return True
-
-	# ============================================================
-	# ALTERAÇÃO DE CARGOS
-	# ============================================================
 
 	async def change_roles(
 		self,
@@ -169,16 +154,11 @@ class SacerdocioCog(commands.Cog):
 			guild,
 		)
 
-		# Mantém todos os cargos que não pertencem ao sacerdócio.
 		cargos_membro = [
 			role
 			for role in sacerdote.roles
 			if role.id not in cargos_sacerdotais
 		]
-
-		# --------------------------------------------------------
-		# ADMISSÃO
-		# --------------------------------------------------------
 
 		if tipo == 0:
 			if cargo_atual:
@@ -200,10 +180,6 @@ class SacerdocioCog(commands.Cog):
 					for role in cargos_membro
 					if role.id != leigo.id
 				]
-
-		# --------------------------------------------------------
-		# PROMOÇÃO
-		# --------------------------------------------------------
 
 		elif tipo == 1:
 			if cargo_atual is None:
@@ -230,10 +206,6 @@ class SacerdocioCog(commands.Cog):
 				if role.id != cargo_atual.id
 			]
 
-		# --------------------------------------------------------
-		# REBAIXAMENTO
-		# --------------------------------------------------------
-
 		elif tipo == 2:
 			if cargo_atual is None:
 				return await interaction.response.send_message(
@@ -259,10 +231,6 @@ class SacerdocioCog(commands.Cog):
 				if role.id != cargo_atual.id
 			]
 
-		# --------------------------------------------------------
-		# DISPENSA
-		# --------------------------------------------------------
-
 		elif tipo == 3:
 			if cargo_atual is None:
 				return await interaction.response.send_message(
@@ -278,10 +246,6 @@ class SacerdocioCog(commands.Cog):
 				"Tipo de ação inválido.",
 				ephemeral=True,
 			)
-
-		# --------------------------------------------------------
-		# NOVO CARGO
-		# --------------------------------------------------------
 
 		if cargo_novo is not None and tipo != 3:
 			if clero is not None:
@@ -323,10 +287,6 @@ class SacerdocioCog(commands.Cog):
 			tipo=tipo,
 			motivo=motivo,
 		)
-
-	# ============================================================
-	# REGISTRO
-	# ============================================================
 
 	async def send_appointment_log(
 		self,
@@ -497,10 +457,6 @@ class SacerdocioCog(commands.Cog):
 			await canal.send(view=view)
 		except discord.Forbidden:
 			pass
-
-	# ============================================================
-	# COMANDOS
-	# ============================================================
 
 	@sacerdocio_group.command(
 		name="nomear",

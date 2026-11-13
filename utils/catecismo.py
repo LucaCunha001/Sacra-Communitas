@@ -31,6 +31,16 @@ class PaginasDict(TypedDict):
 	t_parte: ParteDict
 	q_parte: ParteDict
 
+class ResultadoDict(TypedDict):
+	p_init: int
+	p_end: int
+	texto: list[str]
+	titulo: Optional[str]
+	url: str
+	parte: Optional[int]
+	secao: Optional[int]
+	capitulo: Optional[int]
+
 PAGINAS: PaginasDict = {
 	"prologo": {
 		"titulo": "Prólogo",
@@ -248,6 +258,8 @@ URLS = {
 
 session: aiohttp.ClientSession | None = None
 
+ULTIMO_PARAGRAFO = 2865
+
 
 def get_url(parte: int, secao: int, capitulo: int | None = None):
 	parte_k = str(parte)
@@ -289,12 +301,17 @@ def descobrir_bloco(n: int):
 
 	return None, None, None
 
-async def extrair_intervalo(p_init: int, p_end: int):
+async def extrair_intervalo(
+	p_init: int,
+	p_end: int,
+	cache: dict[str, dict[int, str]] | None = None
+) -> ResultadoDict:
 	textos = []
-	cache = {}
+	cache = cache if cache is not None else {}
 	last_url = None
 	pars = {}
 	titulo = None
+	url_fonte = ""
 	parte_base = None
 	secao_base = None
 	capitulo_base = None
@@ -311,6 +328,7 @@ async def extrair_intervalo(p_init: int, p_end: int):
 			secao_base = secao
 			capitulo_base = capitulo
 			titulo = titulo_atual
+			url_fonte = url
 
 		if url != last_url:
 			if url not in cache:
@@ -326,10 +344,87 @@ async def extrair_intervalo(p_init: int, p_end: int):
 		"p_end": p_end,
 		"texto": textos,
 		"titulo": titulo,
+		"url": url_fonte,
 		"parte": parte_base,
 		"secao": secao_base,
 		"capitulo": capitulo_base
 	}
+
+class CatecismoPageView(ui.LayoutView):
+	def __init__(
+		self,
+		data: ResultadoDict,
+		cache: dict[str, dict[int, str]] | None = None
+	):
+		super().__init__(timeout=15 * 60)
+		self.data = data
+		self.cache = cache if cache is not None else {}
+
+		passagem_txt = f"**CIC §{data['p_init']}**"
+		if data["parte"] != 0:
+			passagem_txt += f" - Parte {data['parte']}, Seção {data['secao']}"
+			if data["capitulo"] is not None:
+				passagem_txt += f", Capítulo {data['capitulo']}"
+
+		botoes: list[ui.Button] = [
+			CatecismoPageButton(self, -1, "Anterior"),
+			CatecismoPageButton(self, 1, "Próximo"),
+		]
+		if data["url"]:
+			botoes.append(
+				ui.Button(
+					label="Site do Vaticano",
+					style=discord.ButtonStyle.link,
+					url=data["url"]
+				)
+			)
+
+		container = ui.Container(
+			ui.Section(
+				ui.TextDisplay(f"## {data['titulo']}\n{passagem_txt}"),
+				accessory=ui.Thumbnail(
+					"https://pocketterco.com.br/catecismo/img_catecismo.png"
+				)
+			),
+			ui.Separator(spacing=discord.SeparatorSpacing.large),
+			*[ui.TextDisplay(texto) for texto in data["texto"]],
+			ui.ActionRow(*botoes),
+			accent_color=0xFFCC00
+		)
+		self.add_item(container)
+
+	async def navegar(self, interaction: discord.Interaction, direcao: int):
+		numero = (self.data["p_init"] - 1 + direcao) % ULTIMO_PARAGRAFO + 1
+		await interaction.response.defer()
+
+		data = await extrair_intervalo(numero, numero, self.cache)
+		if not data["texto"]:
+			await interaction.followup.send(
+				"Não encontrei esse trecho no Catecismo.",
+				ephemeral=True
+			)
+			return
+
+		await interaction.edit_original_response(
+			view=CatecismoPageView(data, self.cache)
+		)
+
+class CatecismoPageButton(ui.Button):
+	def __init__(
+		self,
+		pagina: CatecismoPageView,
+		direcao: int,
+		label: str
+	):
+		super().__init__(
+			label=label,
+			style=discord.ButtonStyle.secondary
+		)
+		self.pagina = pagina
+		self.direcao = direcao
+
+	async def callback(self, interaction: discord.Interaction):
+		await self.pagina.navegar(interaction, self.direcao)
 
 async def extract_cic(texto: str):
 	data = []
@@ -407,6 +502,10 @@ async def check_cic_verse(msg: discord.Message):
 			passagem_txt += f" - Parte {data['parte']}, Seção {data['secao']}"
 			if data["capitulo"] is not None:
 				passagem_txt += f", Capítulo {data['capitulo']}"
+
+		if data["p_init"] == data["p_end"]:
+			await msg.reply(view=CatecismoPageView(data))
+			continue
 		
 		view = ui.LayoutView()
 		container = ui.Container(

@@ -87,6 +87,10 @@
 			"Noviço": {
 				"id": 1429448829203382512,
 				"descricao": "Um novo membro em período de prova, aprendendo sobre a fé e os valores da comunidade."
+			},
+			"Conscrito": {
+				"id": 1567938957910609970,
+				"descricao": "Candidato ao serviço moderativo do servidor."
 			}
 		},
 		"anjos": {
